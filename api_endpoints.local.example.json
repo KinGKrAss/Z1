@@ -1,0 +1,23 @@
+[
+  {
+    "id": "athena",
+    "name": "Athena",
+    "url": "https://api.olympus.example/athena/v1",
+    "status": "online",
+    "type": "live"
+  },
+  {
+    "id": "hera",
+    "name": "Hera",
+    "url": "https://api.olympus.example/hera/v1",
+    "status": "prepped",
+    "type": "stub"
+  },
+  {
+    "id": "artemis",
+    "name": "Artemis",
+    "url": "https://api.olympus.example/artemis/v1",
+    "status": "offline",
+    "type": "live"
+  }
+]

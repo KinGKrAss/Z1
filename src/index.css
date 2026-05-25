@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-orbitron: "Orbitron", sans-serif;
+}
+
+:root {
+  --gold: #deff9a;
+  --gold-glow: rgba(222,255,154,0.35);
+  --dark: #050505;
+  --gray: #111;
+  --text: #daffde;
+  --btc: #f7931a;
+  --btc-glow: rgba(247,147,26,0.25);
+  --bg: #050505;
+  --ink: #daffde;
+}
+
+body {
+  background-color: var(--dark);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+.font-orbitron {
+  font-family: var(--font-orbitron);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.serif-italic {
+  font-family: 'Georgia', serif;
+  font-style: italic;
+}
+

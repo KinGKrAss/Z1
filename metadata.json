@@ -1,0 +1,6 @@
+{
+  "name": "Göttinnen API Dashboard",
+  "description": "Ein Dashboard zur Diagnose und Überwachung von Göttinnen-API-Endpunkten mit Echtzeit-Statusanzeige.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
