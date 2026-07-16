@@ -37,11 +37,9 @@ const DEFAULT_ISSUER = "🦁 n ❤️";
 const DEFAULT_VERSION = "1.0.0";
 
 export function canonicalizeHeartPolicy(policy: HeartPolicy): string {
-  const orderedKeys = Object.keys(policy).sort() as (keyof HeartPolicy)[];
-  const orderedPolicy = orderedKeys.reduce((acc, key) => {
-    acc[key] = policy[key];
-    return acc;
-  }, {} as Partial<HeartPolicy>) as HeartPolicy;
+  const orderedPolicy = Object.fromEntries(
+    Object.entries(policy).sort(([left], [right]) => left.localeCompare(right))
+  ) as HeartPolicy;
 
   return JSON.stringify(orderedPolicy);
 }
