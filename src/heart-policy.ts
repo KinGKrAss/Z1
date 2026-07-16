@@ -41,7 +41,7 @@ export function canonicalizeHeartPolicy(policy: HeartPolicy): string {
   const orderedPolicy = orderedKeys.reduce((acc, key) => {
     acc[key] = policy[key];
     return acc;
-  }, {} as HeartPolicy);
+  }, {} as Partial<HeartPolicy>) as HeartPolicy;
 
   return JSON.stringify(orderedPolicy);
 }
