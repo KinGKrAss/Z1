@@ -38,10 +38,18 @@ const DEFAULT_VERSION = "1.0.0";
 
 export function canonicalizeHeartPolicy(policy: HeartPolicy): string {
   const orderedPolicy = Object.fromEntries(
-    Object.entries(policy).sort(([left], [right]) => left.localeCompare(right))
+    Object.entries(policy).sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
   ) as HeartPolicy;
 
   return JSON.stringify(orderedPolicy);
+}
+
+function readKeyFile(filePath: string, keyType: "private" | "public"): string {
+  try {
+    return fs.readFileSync(filePath, "utf8");
+  } catch {
+    throw new Error(`Failed to read ${keyType} key from path: ${filePath}`);
+  }
 }
 
 export function signHeartPolicy(
@@ -50,7 +58,7 @@ export function signHeartPolicy(
   options: SignHeartPolicyOptions = {}
 ): HeartPolicySignature {
   const canonicalPolicy = canonicalizeHeartPolicy(policy);
-  const privateKeyPem = fs.readFileSync(privateKeyPath, "utf8");
+  const privateKeyPem = readKeyFile(privateKeyPath, "private");
   const privateKey = crypto.createPrivateKey({
     key: privateKeyPem,
     format: "pem",
@@ -68,7 +76,7 @@ export function signHeartPolicy(
     $comment: options.comment ?? DEFAULT_COMMENT,
     signature,
     issued,
-    verified: true,
+    verified: false,
     issuer: options.issuer ?? DEFAULT_ISSUER,
     version: options.version ?? DEFAULT_VERSION,
   };
@@ -80,7 +88,7 @@ export function verifyHeartPolicy(
   publicKeyPath: string
 ): boolean {
   const canonicalPolicy = canonicalizeHeartPolicy(policy);
-  const publicKeyPem = fs.readFileSync(publicKeyPath, "utf8");
+  const publicKeyPem = readKeyFile(publicKeyPath, "public");
   const publicKey = crypto.createPublicKey({
     key: publicKeyPem,
     format: "pem",
