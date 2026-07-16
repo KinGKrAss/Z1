@@ -17,6 +17,7 @@ export interface HeartPolicySignature {
   $comment: string;
   signature: string;
   issued: string;
+  // Workflow flag: false when created by signHeartPolicy, set by caller after verifyHeartPolicy.
   verified: boolean;
   issuer: string;
   version: string;
