@@ -47,8 +47,11 @@ export function canonicalizeHeartPolicy(policy: HeartPolicy): string {
 function readKeyFile(filePath: string, keyType: "private" | "public"): string {
   try {
     return fs.readFileSync(filePath, "utf8");
-  } catch {
-    throw new Error(`Failed to read ${keyType} key from path: ${filePath}`);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "unknown error";
+    throw new Error(
+      `Failed to read ${keyType} key from path: ${filePath}. Error: ${reason}`
+    );
   }
 }
 
