@@ -109,7 +109,7 @@ export function verifyHeartPolicy(
     format: "pem",
   });
 
-  const algorithm = options.algorithm ?? signatureBlock.algorithm ?? DEFAULT_ALGORITHM;
+  const algorithm = signatureBlock.algorithm ?? options.algorithm ?? DEFAULT_ALGORITHM;
   const verifier = crypto.createVerify(algorithm);
   verifier.update(canonicalPolicy, "utf8");
   verifier.end();
