@@ -45,6 +45,20 @@ export const DEFAULT_VERSION = "1.0.0";
 
 export const DEFAULT_ALGORITHM = "RSA-SHA256";
 
+export const ALLOWED_ALGORITHMS = new Set([
+  "RSA-SHA256",
+  "RSA-SHA384",
+  "RSA-SHA512",
+]);
+
+function validateAlgorithm(algorithm: string): void {
+  if (!ALLOWED_ALGORITHMS.has(algorithm)) {
+    throw new Error(
+      `Unsupported signing algorithm: "${algorithm}". Allowed algorithms: ${[...ALLOWED_ALGORITHMS].join(", ")}.`
+    );
+  }
+}
+
 export function canonicalizeHeartPolicy(policy: HeartPolicy): string {
   const orderedPolicy = Object.fromEntries(
     Object.entries(policy).sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
