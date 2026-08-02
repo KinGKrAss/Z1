@@ -21,6 +21,7 @@ export interface HeartPolicySignature {
   verified: boolean;
   issuer: string;
   version: string;
+  algorithm: string;
 }
 
 export interface SignHeartPolicyOptions {
@@ -28,14 +29,35 @@ export interface SignHeartPolicyOptions {
   issuer?: string;
   version?: string;
   comment?: string;
+  algorithm?: string;
 }
 
-const DEFAULT_COMMENT =
+export interface VerifyHeartPolicyOptions {
+  algorithm?: string;
+}
+
+export const DEFAULT_COMMENT =
   "🦁 n ❤️ HeartPolicy-Metadaten unter Souveränität von König René Demir";
 
-const DEFAULT_ISSUER = "🦁 n ❤️";
+export const DEFAULT_ISSUER = "🦁 n ❤️";
 
-const DEFAULT_VERSION = "1.0.0";
+export const DEFAULT_VERSION = "1.0.0";
+
+export const DEFAULT_ALGORITHM = "RSA-SHA256";
+
+export const ALLOWED_ALGORITHMS = new Set([
+  "RSA-SHA256",
+  "RSA-SHA384",
+  "RSA-SHA512",
+]);
+
+function validateAlgorithm(algorithm: string): void {
+  if (!ALLOWED_ALGORITHMS.has(algorithm)) {
+    throw new Error(
+      `Unsupported signing algorithm: "${algorithm}". Allowed algorithms: ${[...ALLOWED_ALGORITHMS].join(", ")}.`
+    );
+  }
+}
 
 export function canonicalizeHeartPolicy(policy: HeartPolicy): string {
   const orderedPolicy = Object.fromEntries(
@@ -69,7 +91,8 @@ export function signHeartPolicy(
     type: "pkcs8",
   });
 
-  const signer = crypto.createSign("RSA-SHA256");
+  const algorithm = options.algorithm ?? DEFAULT_ALGORITHM;
+  const signer = crypto.createSign(algorithm);
   signer.update(canonicalPolicy, "utf8");
   signer.end();
 
@@ -83,13 +106,15 @@ export function signHeartPolicy(
     verified: false,
     issuer: options.issuer ?? DEFAULT_ISSUER,
     version: options.version ?? DEFAULT_VERSION,
+    algorithm,
   };
 }
 
 export function verifyHeartPolicy(
   policy: HeartPolicy,
   signatureBlock: HeartPolicySignature,
-  publicKeyPath: string
+  publicKeyPath: string,
+  options: VerifyHeartPolicyOptions = {}
 ): boolean {
   const canonicalPolicy = canonicalizeHeartPolicy(policy);
   const publicKeyPem = readKeyFile(publicKeyPath, "public");
@@ -98,7 +123,8 @@ export function verifyHeartPolicy(
     format: "pem",
   });
 
-  const verifier = crypto.createVerify("RSA-SHA256");
+  const algorithm = signatureBlock.algorithm ?? options.algorithm ?? DEFAULT_ALGORITHM;
+  const verifier = crypto.createVerify(algorithm);
   verifier.update(canonicalPolicy, "utf8");
   verifier.end();
 
