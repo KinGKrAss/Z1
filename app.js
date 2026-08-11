@@ -109,8 +109,8 @@ function generateTaskId() {
 function saveTasks() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-  } catch {
-    // Keep the app usable even when storage is unavailable.
+  } catch (error) {
+    console.warn('Unable to persist tasks to localStorage.', error);
   }
 }
 
@@ -133,7 +133,8 @@ function loadTasks() {
         typeof task.text === 'string' &&
         typeof task.completed === 'boolean'
     );
-  } catch {
+  } catch (error) {
+    console.warn('Unable to read tasks from localStorage.', error);
     return [];
   }
 }
