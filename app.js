@@ -31,7 +31,7 @@ function addTask(rawText) {
   }
 
   tasks.push({
-    id: crypto.randomUUID(),
+    id: generateTaskId(),
     text,
     completed: false,
   });
@@ -96,17 +96,29 @@ function updateCounter() {
   taskCounter.textContent = `${total} total · ${completed} completed`;
 }
 
+function generateTaskId() {
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `task-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function saveTasks() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  } catch {
+    // Keep the app usable even when storage is unavailable.
+  }
 }
 
 function loadTasks() {
-  const savedTasks = localStorage.getItem(STORAGE_KEY);
-  if (!savedTasks) {
-    return [];
-  }
-
   try {
+    const savedTasks = localStorage.getItem(STORAGE_KEY);
+    if (!savedTasks) {
+      return [];
+    }
+
     const parsed = JSON.parse(savedTasks);
     if (!Array.isArray(parsed)) {
       return [];
