@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -59,9 +59,54 @@ class MemoryEntry(Base):
     memory_type: Mapped[str] = mapped_column(String, default="fact", nullable=False)
     confidence: Mapped[Decimal] = mapped_column(Numeric(5, 4), default=Decimal("1.0"))
     embedding: Mapped[list[float] | None] = mapped_column(Vector(1536))
+    memory_key: Mapped[str | None] = mapped_column(String)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    is_current: Mapped[bool] = mapped_column(default=True, nullable=False)
+    category: Mapped[str] = mapped_column(String, default="general", nullable=False)
+    priority: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     sources: Mapped[list["SourceReference"]] = relationship(back_populates="memory", cascade="all, delete-orphan")
+
+
+class MemoryVersion(Base):
+    __tablename__ = "memory_versions"
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    memory_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("memory_entries.id", ondelete="CASCADE"))
+    memory_key: Mapped[str] = mapped_column(String, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    memory_type: Mapped[str] = mapped_column(String, nullable=False)
+    category: Mapped[str] = mapped_column(String, default="general", nullable=False)
+    confidence: Mapped[Decimal] = mapped_column(Numeric(5, 4), default=Decimal("1.0"))
+    priority: Mapped[int] = mapped_column(Integer, default=5)
+    change_reason: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class MemoryConversation(Base):
+    __tablename__ = "memory_conversations"
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    conversation_external_id: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    title: Mapped[str | None] = mapped_column(String)
+    source: Mapped[str] = mapped_column(String, default="import", nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    messages: Mapped[list["MemoryMessage"]] = relationship(back_populates="conversation", cascade="all, delete-orphan")
+
+
+class MemoryMessage(Base):
+    __tablename__ = "memory_messages"
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    conversation_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("memory_conversations.id", ondelete="CASCADE"))
+    external_message_id: Mapped[str | None] = mapped_column(String)
+    role: Mapped[str] = mapped_column(String, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    message_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    metadata_json: Mapped[dict[str, Any]] = mapped_column("metadata", JSONB, default=dict, nullable=False)
+    conversation: Mapped[MemoryConversation] = relationship(back_populates="messages")
 
 
 class SourceReference(Base):
@@ -71,6 +116,10 @@ class SourceReference(Base):
     source_type: Mapped[str] = mapped_column(String, nullable=False)
     source_id: Mapped[str | None] = mapped_column(String)
     source_text: Mapped[str | None] = mapped_column(Text)
+    conversation_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("memory_conversations.id", ondelete="SET NULL"))
+    message_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("memory_messages.id", ondelete="SET NULL"))
+    confidence: Mapped[Decimal] = mapped_column(Numeric(5, 4), default=Decimal("1.0"))
+    provenance_type: Mapped[str] = mapped_column(String, default="source", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     memory: Mapped[MemoryEntry] = relationship(back_populates="sources")
 
