@@ -5,3 +5,4 @@ psycopg[binary]==3.2.9
 pydantic-settings==2.10.1
 openai==1.99.9
 mcp==1.13.1
+pgvector==0.4.1
