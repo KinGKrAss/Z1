@@ -5,6 +5,7 @@ const taskInput = document.getElementById('task-input');
 const taskList = document.getElementById('task-list');
 const taskCounter = document.getElementById('task-counter');
 const clearCompletedButton = document.getElementById('clear-completed');
+let fallbackTaskCounter = 0;
 
 let tasks = loadTasks();
 
@@ -101,7 +102,8 @@ function generateTaskId() {
     return globalThis.crypto.randomUUID();
   }
 
-  return `task-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  fallbackTaskCounter += 1;
+  return `task-${Date.now()}-${fallbackTaskCounter}-${Math.random().toString(16).slice(2)}`;
 }
 
 function saveTasks() {
