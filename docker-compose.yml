@@ -1,0 +1,17 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: z1
+      POSTGRES_USER: z1
+      POSTGRES_PASSWORD: z1
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://z1:z1@db:5432/z1
+    ports: ["8080:8080"]
+    depends_on: [db]
+volumes:
+  pgdata:

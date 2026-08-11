@@ -1,0 +1,24 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT UNIQUE NOT NULL, display_name TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS roles (id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL);
+CREATE TABLE IF NOT EXISTS permissions (id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL);
+CREATE TABLE IF NOT EXISTS user_roles (user_id UUID REFERENCES users(id) ON DELETE CASCADE, role_id BIGINT REFERENCES roles(id) ON DELETE CASCADE, PRIMARY KEY(user_id, role_id));
+CREATE TABLE IF NOT EXISTS role_permissions (role_id BIGINT REFERENCES roles(id) ON DELETE CASCADE, permission_id BIGINT REFERENCES permissions(id) ON DELETE CASCADE, PRIMARY KEY(role_id, permission_id));
+CREATE TABLE IF NOT EXISTS properties (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), object_code TEXT UNIQUE NOT NULL, name TEXT, status TEXT NOT NULL DEFAULT 'active', created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS property_addresses (id BIGSERIAL PRIMARY KEY, property_id UUID UNIQUE REFERENCES properties(id) ON DELETE CASCADE, street TEXT, house_number TEXT, postal_code TEXT, city TEXT, country TEXT DEFAULT 'DE', latitude DOUBLE PRECISION, longitude DOUBLE PRECISION);
+CREATE TABLE IF NOT EXISTS units (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE, unit_code TEXT, area_m2 NUMERIC(12,2), status TEXT DEFAULT 'active');
+CREATE TABLE IF NOT EXISTS tenants (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name TEXT NOT NULL, email TEXT, phone TEXT);
+CREATE TABLE IF NOT EXISTS contracts (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), unit_id UUID REFERENCES units(id) ON DELETE SET NULL, tenant_id UUID REFERENCES tenants(id) ON DELETE SET NULL, contract_type TEXT, valid_from DATE, valid_to DATE, status TEXT DEFAULT 'active');
+CREATE TABLE IF NOT EXISTS maintenance_tickets (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), property_id UUID REFERENCES properties(id) ON DELETE CASCADE, title TEXT NOT NULL, status TEXT DEFAULT 'open', priority INT DEFAULT 5, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS decisions (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), property_id UUID REFERENCES properties(id) ON DELETE SET NULL, decision_type TEXT NOT NULL, rationale TEXT, decided_by UUID REFERENCES users(id) ON DELETE SET NULL, decided_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS memory_entries (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), title TEXT NOT NULL, content TEXT NOT NULL, memory_type TEXT NOT NULL DEFAULT 'fact', confidence NUMERIC(5,4) DEFAULT 1.0, embedding vector(1536), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS source_references (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), memory_id UUID NOT NULL REFERENCES memory_entries(id) ON DELETE CASCADE, source_type TEXT NOT NULL, source_id TEXT, source_text TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS property_documents (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE, drive_file_id TEXT, name TEXT NOT NULL, mime_type TEXT, version TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS audit_log (id BIGSERIAL PRIMARY KEY, user_id UUID REFERENCES users(id) ON DELETE SET NULL, action TEXT NOT NULL, entity_type TEXT, entity_id TEXT, before_data JSONB, after_data JSONB, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS idx_memory_type ON memory_entries(memory_type);
+CREATE INDEX IF NOT EXISTS idx_memory_embedding ON memory_entries USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
+INSERT INTO roles(name) VALUES ('admin') ON CONFLICT DO NOTHING;
+INSERT INTO permissions(name) VALUES ('property.read'), ('property.write'), ('memory.read'), ('memory.write'), ('document.read'), ('document.write') ON CONFLICT DO NOTHING;
