@@ -3,12 +3,17 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": { "node": ">=22 <25" },
   "scripts": {
+    "z1:api": "node runtime/z1-api.mjs",
+    "z1:core": "node runtime/z1-core-runtime.mjs",
+    "z1:runtime": "node runtime/z1-core-runtime.mjs",
     "dev": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test:core": "python -m unittest discover -s tests -p 'test_*.py'"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
@@ -32,11 +37,5 @@
     "tsx": "^4.23.1",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
-  },
-  "allowScripts": {
-    "esbuild@0.27.7": true,
-    "esbuild@0.25.12": true,
-    "protobufjs@7.6.5": true,
-    "esbuild@0.28.1": true
   }
 }
