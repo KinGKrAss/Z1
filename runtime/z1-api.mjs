@@ -11,16 +11,20 @@ function json(res, status, body) {
 
 function coreStatus() {
   return new Promise((resolve) => {
-    const child = spawn("python", ["-m", "core.system_z1_core"], {
+    const child = spawn("python", ["-m", "modules.bootstrap"], {
       env: { ...process.env, Z1_AUDIT_PATH: process.env.Z1_AUDIT_PATH ?? "data/z1_audit.jsonl" },
     });
     let output = "";
     child.stdout.on("data", (chunk) => { output += chunk.toString(); });
     child.on("close", () => {
-      try { resolve(JSON.parse(output)); }
-      catch { resolve({ name: "Z1 Core", status: "unknown", runtime: "python" }); }
+      try {
+        const parsed = JSON.parse(output);
+        resolve({ ...parsed, runtime: "node + python" });
+      } catch {
+        resolve({ name: "Z1 Core", status: "unknown", runtime: "node + python" });
+      }
     });
-    child.on("error", () => resolve({ name: "Z1 Core", status: "offline" }));
+    child.on("error", () => resolve({ name: "Z1 Core", status: "offline", runtime: "node + python" }));
   });
 }
 
