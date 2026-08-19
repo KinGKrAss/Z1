@@ -1,6 +1,12 @@
 export type UUID = string;
 export type Currency = "EUR" | "USD" | "GBP" | "CHF" | "CNY" | "JPY";
 
+export type AssetValidationStatus =
+  | "VALID_ASSET_DOCUMENT"
+  | "UNVERIFIED"
+  | "INVALID_ASSET_DOCUMENT"
+  | "EXTRACTION_FAILED";
+
 export interface Property {
   id: UUID;
   title: string;
@@ -50,6 +56,21 @@ export interface DocumentRecord {
   documentType?: string;
   source?: string;
   createdAt: string;
+}
+
+export interface AssetEvidenceRecord {
+  documentId: UUID;
+  filename: string;
+  extractionStatus: "SUCCESS" | "EXTRACTION_FAILED";
+  assetId?: string;
+  assetType?: string;
+  quantity?: string;
+  unit?: string;
+  source?: string;
+  sourceVerified: boolean;
+  assetEvidence: boolean;
+  validationStatus: AssetValidationStatus;
+  reasons: string[];
 }
 
 export interface AuditEvent {

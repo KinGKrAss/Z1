@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "test:core": "python -m unittest discover -s tests -p 'test_*.py'"
+    "test:core": "python -m unittest discover -s tests -p 'test_*.py'",
+    "test:asset": "python -m unittest tests/test_gitta_asset_validation.py"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
