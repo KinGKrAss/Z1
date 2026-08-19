@@ -11,7 +11,7 @@ Browser
   -> Gitta / Textract / Z1 Core
 ```
 
-GitHub Pages ist für die statische Browseroberfläche geeignet. Es hostet keine serverseitigen Python-/Node-Prozesse; die Z1-API bleibt deshalb außerhalb von Pages. citehttps://docs.github.com/de/pages/getting-started-with-github-pages/what-is-github-pages
+GitHub Pages ist für die statische Browseroberfläche geeignet. Es hostet keine serverseitigen Python-/Node-Prozesse; die Z1-API bleibt deshalb außerhalb von Pages.
 
 ## Browser URL
 
