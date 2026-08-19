@@ -110,7 +110,7 @@ def extract_document(path: str | Path) -> ExtractionResult:
             text=text,
             method="textract",
         )
-    except Exception as exc:  # extraction is an explicit evidence state
+    except Exception as exc:
         return ExtractionResult(
             file_name=file_path.name,
             mime_type=mime_type,
@@ -169,7 +169,8 @@ def validate_asset_evidence(
             reasons=reasons,
         )
 
-    if any(marker in normalized for marker in LOGIN_MARKERS):
+    login_detected = any(marker in normalized for marker in LOGIN_MARKERS)
+    if login_detected:
         reasons.append("login/account content detected")
 
     if not asset_id:
@@ -186,10 +187,19 @@ def validate_asset_evidence(
 
     marker_count = sum(marker in normalized for marker in ASSET_MARKERS)
     evidence_complete = bool(asset_id and asset_type and quantity and source_verified)
+    id_mismatch = bool(expected_asset_id and asset_id and asset_id != expected_asset_id)
 
-    if evidence_complete and not any(marker in normalized for marker in LOGIN_MARKERS):
+    # Login/account exports are never allowed to become asset evidence merely
+    # because words such as "gold" happen to occur in the page.
+    if login_detected and not asset_id:
+        status = STATUS_INVALID
+        has_evidence = False
+    elif evidence_complete and not login_detected and not id_mismatch:
         status = STATUS_VALID
         has_evidence = True
+    elif id_mismatch:
+        status = STATUS_INVALID
+        has_evidence = False
     elif asset_id or marker_count >= 2:
         status = STATUS_UNVERIFIED
         has_evidence = True
