@@ -2,7 +2,7 @@
 
 ## Ziel
 
-Z1 bekommt eine getrennte Browser- und Runtime-Struktur:
+Z1 verwendet eine getrennte Browser- und Runtime-Struktur:
 
 ```text
 Browser
@@ -11,7 +11,7 @@ Browser
   -> Gitta / Textract / Z1 Core
 ```
 
-GitHub Pages ist für die statische Browseroberfläche geeignet. Es hostet keine serverseitigen Python-/Node-Prozesse; die Z1-API bleibt deshalb außerhalb von Pages.
+GitHub Pages ist für die statische Browseroberfläche geeignet. Server-seitige Python-/Node-Prozesse bleiben außerhalb von Pages.
 
 ## Browser URL
 
@@ -31,7 +31,7 @@ Damit wird ein fehlerhafter Browser-Build vor dem Deployment erkannt.
 
 ## API-Verbindung
 
-Die Browseroberfläche und die Z1-API sind bewusst getrennt. Für einen echten produktiven API-Zugang muss eine HTTPS-API-Adresse als Deployment-Konfiguration hinterlegt werden; GitHub Pages darf nicht als Backend missverstanden werden.
+Die Browseroberfläche und die Z1-API sind bewusst getrennt. Für einen echten produktiven API-Zugang muss eine HTTPS-API-Adresse als Deployment-Konfiguration hinterlegt werden; GitHub Pages ist nicht das Backend.
 
 Empfohlene Produktionsarchitektur:
 
@@ -49,6 +49,6 @@ Z1 API / Control Plane
 
 ## Stabilität
 
-Die Browseroberfläche selbst hat keinen festen Port wie `8088` oder `8443`. GitHub Pages stellt HTTPS bereit. Ein separater API-Port bleibt eine Server-/Deployment-Frage.
+Die Browseroberfläche selbst benötigt keinen festen Port wie `8088` oder `8443`. GitHub Pages stellt HTTPS bereit. Ein separater API-Port bleibt eine Server-/Deployment-Frage.
 
 Für die API sollten zusätzlich Health-Checks, Keepalive, kontrollierte Timeouts und Client-Reconnect verwendet werden.
