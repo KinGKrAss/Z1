@@ -1,7 +1,8 @@
-"""Z1 Node.js runtime launcher.
-
-Node.js owns the service/runtime layer. The canonical Z1 Core remains Python.
-"""
+/**
+ * Z1 Node.js runtime launcher.
+ *
+ * Node.js owns the service/runtime layer. The canonical Z1 Core remains Python.
+ */
 
 import { spawn } from "node:child_process";
 
