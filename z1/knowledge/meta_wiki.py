@@ -56,3 +56,24 @@ class MetaWiki:
             verification_status=VerificationStatus.VERIFIED,
             source="Z1 knowledge architecture",
         ))
+        self.add(KnowledgeEntry(
+            term="Serum Regalis",
+            definition="Persistenter Z1-Projektstand für das modulare pflanzen-/naturbasierte Regalis-Konzept; Forschungsannahmen, Evidenzstatus und regulatorische Leitplanken müssen getrennt geführt werden.",
+            category="z1-project",
+            verification_status=VerificationStatus.PARTIAL,
+            source="Z1-REGALIS-2026-08-25-v1",
+        ))
+        self.add(KnowledgeEntry(
+            term="Lion Essence",
+            definition="Alternativbezeichnung des Projekts Serum Regalis / Lion Essence; gehört zum Regalis-Projektkontext und nicht zum Musikprojekt Königsblut.",
+            category="z1-project",
+            verification_status=VerificationStatus.PARTIAL,
+            source="Z1-REGALIS-2026-08-25-v1",
+        ))
+        self.add(KnowledgeEntry(
+            term="Königsblut",
+            definition="Eigenständiges Rap-/Musikprojekt; nicht mit Serum Regalis / Lion Essence zu verwechseln.",
+            category="z1-project",
+            verification_status=VerificationStatus.PARTIAL,
+            source="owner project distinction",
+        ))
