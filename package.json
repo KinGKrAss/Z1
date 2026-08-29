@@ -8,6 +8,7 @@
     "z1:api": "node runtime/z1-api.mjs",
     "z1:core": "node runtime/z1-core-runtime.mjs",
     "z1:runtime": "node runtime/z1-core-runtime.mjs",
+    "z1:ppt:test": "node --test tests/ppt-transaction-engine.test.mjs",
     "dev": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview",
