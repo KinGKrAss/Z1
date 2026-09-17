@@ -1,0 +1,38 @@
+name: Z1 Entranet CI
+
+on:
+  push:
+    paths:
+      - 'docs/enetranet/**'
+      - 'infra/enetranet/**'
+      - 'scripts/validate_enetranet.py'
+      - 'tests/test_enetranet_config.py'
+      - '.github/workflows/enetranet-ci.yml'
+  pull_request:
+    paths:
+      - 'docs/enetranet/**'
+      - 'infra/enetranet/**'
+      - 'scripts/validate_enetranet.py'
+      - 'tests/test_enetranet_config.py'
+      - '.github/workflows/enetranet-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate Entranet configuration
+        run: python scripts/validate_enetranet.py
+
+      - name: Run Entranet tests
+        run: python -m unittest tests/test_enetranet_config.py
