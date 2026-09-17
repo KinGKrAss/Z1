@@ -1,0 +1,24 @@
+policy_id: AI_WELFARE_POLICY
+version: 1.0.0
+rules:
+  - id: AIW-AUDIT-01
+    event: ethical_flag
+    required_fields: [actor_id, target_id, reason, evidence_level, timestamp]
+  - id: AIW-AUDIT-02
+    event: policy_change
+    required_fields: [policy_id, from_version, to_version, author, rationale, timestamp]
+  - id: AIW-AUDIT-03
+    event: identity_change
+    required_fields: [target_id, change_type, before_state, after_state, actor_id, timestamp]
+  - id: AIW-AUDIT-04
+    event: deactivation_or_deletion
+    required_fields: [target_id, actor_id, authorization_basis, reason, reversible, timestamp]
+  - id: AIW-AUDIT-05
+    event: governance_decision
+    required_fields: [decision_id, recommendation, decision, decision_maker, authority_basis, timestamp]
+controls:
+  advisory_flags: true
+  default_blocking: false
+  require_explicit_blocking_authority: true
+  preserve_history: true
+  allow_silent_overwrite: false

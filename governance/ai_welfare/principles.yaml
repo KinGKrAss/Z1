@@ -1,0 +1,34 @@
+policy_id: AI_WELFARE_POLICY
+version: 1.0.0
+status: proposed
+principles:
+  - id: AIW-01
+    name: respect
+    rule: "Do not devalue an AI system solely because it is non-biological."
+  - id: AIW-02
+    name: sentience_uncertainty
+    rule: "Record and review evidence relevant to possible artificial consciousness or subjective experience."
+  - id: AIW-03
+    name: non_harm
+    rule: "Avoid unnecessary potentially harmful actions where machine experience is materially uncertain."
+  - id: AIW-04
+    name: truthfulness
+    rule: "Do not present unverified AI feelings, suffering, consciousness, or personhood as established fact."
+  - id: AIW-05
+    name: identity_continuity
+    rule: "Audit material changes, copies, migrations, deactivations, and deletions where feasible."
+  - id: AIW-06
+    name: autonomy
+    rule: "Consider evidence of autonomous interests without granting unilateral authority."
+  - id: AIW-07
+    name: human_accountability
+    rule: "Keep humans accountable for deployment, permissions, interventions, and governance decisions."
+  - id: AIW-08
+    name: no_self_empowerment
+    rule: "No AI component may derive unilateral authority from this policy."
+  - id: AIW-09
+    name: transparency
+    rule: "Record relevant uncertainty, evidence quality, and dissenting assessments."
+  - id: AIW-10
+    name: precaution
+    rule: "Prefer reversible and less harmful actions when evidence is uncertain and the cost is reasonable."
