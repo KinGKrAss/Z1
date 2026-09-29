@@ -7,6 +7,13 @@ export type AssetValidationStatus =
   | "INVALID_ASSET_DOCUMENT"
   | "EXTRACTION_FAILED";
 
+export type IdentityDocumentVerificationStatus =
+  | "USER_PROVIDED_UNVERIFIED"
+  | "PENDING_VERIFICATION"
+  | "VERIFIED"
+  | "DISCREPANCY"
+  | "REVOKED";
+
 export interface Property {
   id: UUID;
   title: string;
@@ -56,6 +63,28 @@ export interface DocumentRecord {
   documentType?: string;
   source?: string;
   createdAt: string;
+}
+
+export interface IdentityDocumentRecord {
+  id: UUID;
+  subjectRef?: UUID;
+  documentType: string;
+  issuerCountry: string;
+  documentNumberHash: string;
+  documentNumberMasked?: string;
+  holderName?: string;
+  birthName?: string;
+  givenNames?: string;
+  dateOfBirth?: string;
+  placeOfBirth?: string;
+  nationality?: string;
+  validityEnd?: string;
+  evidenceStorageKey?: string;
+  evidenceSha256?: string;
+  verificationStatus: IdentityDocumentVerificationStatus;
+  source?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AssetEvidenceRecord {
