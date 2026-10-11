@@ -26,6 +26,10 @@ jobs:
         run: npm run lint
       - name: Build
         run: npm run build
+      - name: Test Z1 Speak browser policy
+        run: npm run test:speak-ui
+      - name: Test Z1 Speak backend
+        run: npm run test:speak
 
   python-core:
     name: Python Core Tests
@@ -37,7 +41,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install Python test dependencies
+        run: python -m pip install "pytest>=8,<10"
       - name: Run Z1 Core tests
         run: npm run test:core
+      - name: Run Trust Wallet adapter tests
+        run: python -m pytest tests/test_trust_wallet_adapter.py -q
       - name: Run Gitta asset validation tests
         run: npm run test:asset
