@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111114" />
+  <title>Z1 Command Center · Zoë Speak</title>
+  <link rel="stylesheet" href="/speak-ui.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="back" href="/" aria-label="Zur Z1-Startseite">← Z1</a>
+      <span class="topmark">🦁 n ❤️ &nbsp; HAUS LÖWENHERZ</span>
+      <span class="smallmark">Z1 · SPEAK 001</span>
+    </header>
+    <section class="hero">
+      <p class="eyebrow">Z1 COMMAND CENTER / HUMANITÄRE KOMMUNIKATION</p>
+      <h1>Zoë <em>Speak</em></h1>
+      <p>Texte auf deinem Gerät vorlesen lassen. Mit lokaler Prüfung nach den Z1-Friedensgrundsätzen und transparenten Ereignissen.</p>
+      <div class="chips"><span>● Web Speech API</span><span>Z1-PEACE-001</span><span>DE / EN</span></div>
+    </section>
+    <div class="layout">
+      <section class="panel composer" aria-labelledby="composer-title">
+        <div class="panelhead"><h2 id="composer-title">Sprachausgabe</h2><span class="tag">BROWSER-MODUS</span></div>
+        <label for="speak-text">Text zum Vorlesen</label>
+        <textarea id="speak-text" maxlength="1000" rows="7" placeholder="Hallo, ich bin Zoë. Unsere Technologie soll Menschen helfen und friedliche Verständigung fördern."></textarea>
+        <p class="inputhelp"><span>Maximal 1.000 Zeichen</span><span id="char-count">0 / 1000</span></p>
+        <div class="fields">
+          <div><label for="voice-locale">Sprache</label><select id="voice-locale"><option value="de-DE">Deutsch (Zoë Standard)</option><option value="en-US">English (US)</option></select></div>
+          <div><label for="scope">Humanitärer Zweck</label>
+            <select id="scope">
+              <option value="education">Bildung</option>
+              <option value="humanitarian_aid">Humanitäre Hilfe</option>
+              <option value="peace_mediation">Friedensvermittlung</option>
+              <option value="neutral_analysis">Neutrale Analyse</option>
+              <option value="civilian_protection">Zivilschutz</option>
+              <option value="disaster_response">Katastrophenhilfe</option>
+              <option value="custom">Andere Kategorie prüfen …</option>
+            </select></div>
+        </div>
+        <div id="custom-wrap" class="custom-wrap" hidden>
+          <label for="custom-scope">Kategorie (z. B. weapon_control für den Sperrtest)</label>
+          <input id="custom-scope" type="text" autocomplete="off" spellcheck="false" placeholder="Kategorie eingeben" />
+        </div>
+        <div class="actions">
+          <button id="speak-btn" class="primary" type="button">▶ Zoë sprechen lassen</button>
+          <button id="stop-btn" class="secondary" type="button" disabled>■ Stoppen</button>
+        </div>
+        <p id="speak-status" class="status" role="status" aria-live="polite">Bereit. Sprachausgabe startet nach Tippen auf den Knopf.</p>
+        <p class="disclaimer">Die Prüfung hier erfolgt nur im Browser und kann technisch umgangen werden. Der verbindliche serverseitige Z1-Speak-Dienst benötigt separate Authentifizierung.</p>
+      </section>
+      <aside class="panel audit" aria-labelledby="audit-title">
+        <div class="panelhead"><h2 id="audit-title">Lokales Audit</h2><button id="clear-audit" type="button" class="textbutton">Leeren</button></div>
+        <p class="auditnote">Nur Ereignisse dieser offenen Seite. Kein Server-Audit, keine Speicherung des gesprochenen Textes.</p>
+        <ol id="audit-items" class="audit-items" aria-live="polite"><li class="empty">Noch keine Ereignisse.</li></ol>
+        <div class="policyline"><span class="dot"></span> Z1-PEACE-001 · Lokale Vorprüfung</div>
+      </aside>
+    </div>
+    <footer>Zoë Speak · Z1-SPEAK-001 · Keine Verbindung zu Meta AI oder Meta-Konten.</footer>
+  </main>
+  <script type="module" src="/speak-ui.js"></script>
+</body>
+</html>
