@@ -1,4 +1,5 @@
 import http from "node:http";
+import { PEACE_POLICY } from "../core/humanitarian_policy.mjs";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { gatewayStatus, authorize, sealMessage, openMessage } from "../core/diplomatic_family_gateway.mjs";
@@ -54,8 +55,9 @@ function validateAssetDocument(relativePath, expectedAssetId) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
   if (req.method === "GET" && url.pathname === "/health") return json(res, 200, { status: "online", service: "z1-api", runtime: "node", node: process.version });
+  if (req.method === "GET" && url.pathname === "/api/z1/peace-policy") return json(res, 200, PEACE_POLICY);
   if (req.method === "GET" && url.pathname === "/api/z1/status") return json(res, 200, await coreStatus());
-  if (req.method === "GET" && url.pathname === "/api/z1/modules") return json(res, 200, { modules: ["zoe", "gaia", "fortuna", "electra", "diplomatie", "ppt", "diplomatic-family-gateway", "gitta-asset-validation"] });
+  if (req.method === "GET" && url.pathname === "/api/z1/modules") return json(res, 200, { modules: ["zoe", "gaia", "fortuna", "electra", "diplomatie", "ppt", "diplomatic-family-gateway", "gitta-asset-validation", "humanitarian-peace-policy"] });
   if (req.method === "GET" && url.pathname === "/api/z1/diplomatic-family/status") return json(res, 200, gatewayStatus());
   if (req.method === "POST" && url.pathname === "/api/z1/diplomatic-family/seal") {
     try {
