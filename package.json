@@ -3,7 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "engines": { "node": ">=22 <25" },
+  "engines": {
+    "node": ">=22 <25"
+  },
   "scripts": {
     "z1:api": "node runtime/z1-api.mjs",
     "z1:core": "node runtime/z1-core-runtime.mjs",
@@ -14,7 +16,8 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "test:core": "python -m unittest discover -s tests -p 'test_*.py'",
-    "test:asset": "python -m unittest tests/test_gitta_asset_validation.py"
+    "test:asset": "python -m unittest tests/test_gitta_asset_validation.py",
+    "test:speak": "node --test tests/speak.test.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
