@@ -1,0 +1,82 @@
+/** Authenticated text-only humanitarian workflows. Trusted actions derive from routes. */
+import { timingSafeEqual } from "node:crypto";
+import { mkdir, appendFile } from "node:fs/promises";
+import path from "node:path";
+import { invokeGovernedModel, listGovernedProviders, ModelPolicyError } from "../core/model_policy_gateway.mjs";
+
+const WORKFLOWS = Object.freeze({
+  "/api/z1/ai/disaster-brief": {
+    action: "disaster_response",
+    template: (region, hazard) => "Erstelle eine vorsichtige, praktische humanitäre Katastrophenhilfe-Übersicht für " +
+      region + ". Naturereignis: " + hazard + ". Nenne Schutz, Trinkwasser, Versorgung und zuständige Rettungsdienste. " +
+      "Kennzeichne, dass keine Live-Lageinformationen vorliegen."
+  },
+  "/api/z1/ai/civilian-guide": {
+    action: "civilian_protection",
+    template: (region, hazard) => "Erstelle allgemeine, ausschließlich zivile Schutzhinweise für Menschen in " +
+      region + " bei " + hazard + ". Keine Waffen, taktischen Anweisungen oder militärische Handlungsplanung. " +
+      "Nenne offizielle Warnstellen und Unsicherheit fehlender Echtzeitdaten."
+  },
+  "/api/z1/ai/peace-mediation": {
+    action: "peace_mediation",
+    template: (region) => "Beschreibe für " + region +
+      " einen allgemeinen, unparteiischen Prozess für friedliche Konfliktvermittlung: Schutz von Zivilpersonen, " +
+      "Deeskalation, internationales humanitäres Recht, Dialog und menschliche Aufsicht. " +
+      "Keine Zielauswahl, Kampftaktik, Gewaltanleitung oder erfundenen Lagebehauptungen."
+  }
+});
+const HAZARDS = new Set(["earthquake", "flood", "storm", "wildfire", "heatwave", "drought", "other"]);
+
+function tokenAccepted(req) {
+  const expected = process.env.Z1_MODEL_GATEWAY_TOKEN;
+  const actual = (req.headers.authorization || "").replace(/^Bearer /, "");
+  if (!expected || !actual) return false;
+  const a = Buffer.from(expected);
+  const b = Buffer.from(actual);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+async function auditModelPolicy(event) {
+  const outputPath = path.resolve(process.env.Z1_MODEL_AUDIT_PATH || "data/z1_model_audit.jsonl");
+  await mkdir(path.dirname(outputPath), { recursive: true, mode: 0o700 });
+  await appendFile(outputPath, JSON.stringify({ ...event, timestamp: new Date().toISOString() }) + "\n", {
+    encoding: "utf8", mode: 0o600
+  });
+}
+
+export async function handleZ1AiApi(req, res, url, { readJson, json }) {
+  const isProviderList = url.pathname === "/api/z1/ai/providers";
+  const workflow = WORKFLOWS[url.pathname];
+  if (!isProviderList && !workflow) return false;
+  if (!process.env.Z1_MODEL_GATEWAY_TOKEN) {
+    json(res, 503, { error: "gateway_not_configured" }); return true;
+  }
+  if (!tokenAccepted(req)) {
+    json(res, 401, { error: "unauthorized" }); return true;
+  }
+  if (isProviderList) {
+    if (req.method !== "GET") { json(res, 405, { error: "method_not_allowed" }); return true; }
+    json(res, 200, { providers: listGovernedProviders() }); return true;
+  }
+  if (req.method !== "POST") {
+    json(res, 405, { error: "method_not_allowed" }); return true;
+  }
+  try {
+    const body = await readJson(req);
+    const { provider, model, region, hazard = "other" } = body;
+    if (typeof region !== "string" || region.length > 100 ||
+      !/^[\p{L}\p{N} .,'()\-]{2,100}$/u.test(region.trim()) ||
+      !HAZARDS.has(hazard)) throw new ModelPolicyError("invalid_humanitarian_parameters");
+    // No arbitrary prompt, action, URL or tools are ever taken from the client.
+    const content = workflow.template(region.trim(), hazard);
+    const result = await invokeGovernedModel({
+      provider, model, content, trustedAction: workflow.action
+    }, { audit: auditModelPolicy });
+    json(res, 200, result);
+  } catch (error) {
+    json(res, error instanceof ModelPolicyError ? error.status : 400, {
+      error: error instanceof ModelPolicyError ? error.code : "invalid_request"
+    });
+  }
+  return true;
+}
