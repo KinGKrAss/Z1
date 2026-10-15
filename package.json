@@ -18,7 +18,8 @@
     "test:core": "python -m unittest discover -s tests -p 'test_*.py'",
     "test:asset": "python -m unittest tests/test_gitta_asset_validation.py",
     "test:speak": "node --test tests/speak.test.mjs tests/speak-api.test.mjs",
-    "test:speak-ui": "node --test tests/speak-ui.test.mjs"
+    "test:speak-ui": "node --test tests/speak-ui.test.mjs",
+    "test:gobtcpay": "node --test tests/gobtcpay.test.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
