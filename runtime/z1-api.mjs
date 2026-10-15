@@ -5,6 +5,7 @@ import { handleZ1AiApi } from "./z1-ai-api.mjs";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { gatewayStatus, authorize, sealMessage, openMessage } from "../core/diplomatic_family_gateway.mjs";
+import { handleGoBtcPayApi } from "./gobtcpay.mjs";
 
 const port = Number(process.env.Z1_API_PORT ?? 3001);
 const host = process.env.Z1_API_HOST ?? "127.0.0.1";
@@ -56,12 +57,13 @@ function validateAssetDocument(relativePath, expectedAssetId) {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+  if (await handleGoBtcPayApi(req, res, url, { json, readJson })) return;
   if (await handleSpeakApi(req, res, url, { json, readJson })) return;
   if (await handleZ1AiApi(req, res, url, { json, readJson })) return;
   if (req.method === "GET" && url.pathname === "/health") return json(res, 200, { status: "online", service: "z1-api", runtime: "node", node: process.version });
   if (req.method === "GET" && url.pathname === "/api/z1/peace-policy") return json(res, 200, PEACE_POLICY);
   if (req.method === "GET" && url.pathname === "/api/z1/status") return json(res, 200, await coreStatus());
-  if (req.method === "GET" && url.pathname === "/api/z1/modules") return json(res, 200, { modules: ["zoe", "gaia", "fortuna", "electra", "diplomatie", "ppt", "diplomatic-family-gateway", "gitta-asset-validation", "humanitarian-peace-policy", "z1-speak"] });
+  if (req.method === "GET" && url.pathname === "/api/z1/modules") return json(res, 200, { modules: ["zoe", "gaia", "fortuna", "electra", "diplomatie", "ppt", "diplomatic-family-gateway", "gitta-asset-validation", "humanitarian-peace-policy", "z1-speak", "gobtcpay-pos"] });
   if (req.method === "GET" && url.pathname === "/api/z1/diplomatic-family/status") return json(res, 200, gatewayStatus());
   if (req.method === "POST" && url.pathname === "/api/z1/diplomatic-family/seal") {
     try {
