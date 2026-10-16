@@ -6,7 +6,7 @@ function normalizeRelativePath(value) {
     throw new TypeError("A non-empty OneDrive app-folder path is required");
   }
   const parts = value.replace(/^\/+|\/+$/g, "").split("/");
-  if (parts.some((part) => !part || part === "." || part === ".." || part.includes("\\\\") || part.includes("\\0"))) {
+  if (parts.some((part) => !part || part === "." || part === ".." || part.includes(String.fromCharCode(92)) || part.includes(String.fromCharCode(0)))) {
     throw new TypeError("Invalid OneDrive app-folder path");
   }
   return parts.map(encodeURIComponent).join("/");
