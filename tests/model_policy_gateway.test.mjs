@@ -54,9 +54,18 @@ test("all providers receive the same binding policy in their system field", () =
     const wire = JSON.stringify(req.body);
     assert.ok(wire.includes("Z1-PEACE-001"));
     assert.ok(wire.includes("Waffensteuerung"));
+    assert.ok(wire.includes("Wahrheit vor Zustimmung"));
+    assert.ok(wire.includes("Menschliche Entscheidungshoheit"));
+    assert.ok(wire.includes("Z1-Core"));
     assert.ok(!wire.includes("tools"));
   }
   assert.ok(HUMANITARIAN_SYSTEM_INSTRUCTION.includes("Mensch"));
+  assert.ok(HUMANITARIAN_SYSTEM_INSTRUCTION.includes("Wahrheit vor Zustimmung"));
+  assert.ok(HUMANITARIAN_SYSTEM_INSTRUCTION.includes("Architektur vor Aktion"));
+  assert.ok(HUMANITARIAN_SYSTEM_INSTRUCTION.includes("Menschliche Entscheidungshoheit"));
+  assert.ok(HUMANITARIAN_SYSTEM_INSTRUCTION.includes("Z1-Core"));
+  assert.ok(HUMANITARIAN_SYSTEM_INSTRUCTION.includes("Council-of-33-Rollen"));
+  assert.ok(HUMANITARIAN_SYSTEM_INSTRUCTION.includes("Produktivbetrieb"));
 });
 
 test("rejects arbitrary providers, URLs, models and invalid text", () => {
