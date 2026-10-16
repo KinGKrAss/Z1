@@ -43,7 +43,7 @@ test("writes text inside the app folder and encodes path segments", async () => 
   assert.equal(requested.options.headers["content-type"], "application/json");
 });
 
-test("rejects path traversal before making a Graph request", async () => {
+test("rejects traversal and platform-specific paths before making a Graph request", async () => {
   let calls = 0;
   const store = createOneDriveAppFolderStore({
     getAccessToken: async () => "test-token",
@@ -51,6 +51,8 @@ test("rejects path traversal before making a Graph request", async () => {
   });
 
   await assert.rejects(store.readText("../outside.json"), /Invalid OneDrive app-folder path/);
+  await assert.rejects(store.readText("..\\outside.json"), /Invalid OneDrive app-folder path/);
+  await assert.rejects(store.readText(`bad${String.fromCharCode(0)}name`), /Invalid OneDrive app-folder path/);
   assert.equal(calls, 0);
 });
 
