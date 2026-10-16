@@ -5,6 +5,7 @@
  */
 import { createHash } from "node:crypto";
 import { PEACE_POLICY, evaluateHumanitarianAction } from "./humanitarian_policy.mjs";
+import { ZOE_PERSONA_SYSTEM_INSTRUCTION } from "./zoe_persona.mjs";
 
 const PROVIDERS = Object.freeze({
   openai: { key: "OPENAI_API_KEY", models: "Z1_OPENAI_MODELS" },
@@ -44,6 +45,7 @@ export function listGovernedProviders(env = process.env) {
 }
 
 export const HUMANITARIAN_SYSTEM_INSTRUCTION = [
+  ZOE_PERSONA_SYSTEM_INSTRUCTION,
   "Z1-PEACE-001 — humanitäre Friedensrichtlinie. Hilf beim Schutz von Menschenleben,",
   "der Zivilbevölkerung, bei Katastrophenschutz, humanitärer Hilfe,",
   "Friedensvermittlung, Bildung und neutraler, quellensensibler Berichterstattung.",
