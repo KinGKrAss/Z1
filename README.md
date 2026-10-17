@@ -19,6 +19,17 @@ View your app in AI Studio: https://ai.studio/apps/3c2987e2-c423-4fb0-8850-7fc54
 3. Run the app:
    `npm run dev`
 
+## Python development setup
+
+Use Python 3.12. Create a virtual environment with `python -m venv .venv`,
+then activate it with `source .venv/bin/activate` (Linux/macOS) or
+`.venv\Scripts\activate` (Windows).
+Install runtime and test dependencies with `python -m pip install -r requirements-dev.txt`.
+Run all Python tests with `python -m pytest tests -q`.
+The pinned textract 2.x release replaces 1.6.5, whose invalid dependency metadata
+is rejected by current pip versions. Some document formats additionally require
+system extraction tools; the UTF-8 text extraction test does not require them.
+
 ## Humanitarian AI safety — international collaboration
 
 Z1 publishes [Z1-PEACE-001](docs/Z1-PEACE-001.md) and an

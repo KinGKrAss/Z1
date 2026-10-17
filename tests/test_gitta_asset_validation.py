@@ -1,7 +1,10 @@
 import unittest
+import tempfile
+from pathlib import Path
 
 from modules.gitta_asset_validation import (
     ExtractionResult,
+    extract_document,
     STATUS_INVALID,
     STATUS_UNVERIFIED,
     STATUS_VALID,
@@ -10,6 +13,15 @@ from modules.gitta_asset_validation import (
 
 
 class GittaAssetValidationTests(unittest.TestCase):
+    def test_extracts_utf8_document_with_installed_textract(self):
+        with tempfile.TemporaryDirectory() as directory:
+            document = Path(directory) / "evidence.txt"
+            document.write_text("Asset ID: 73014444142\nGold für Münster", encoding="utf-8")
+            result = extract_document(document)
+        self.assertEqual(result.extraction_status, "SUCCESS", result.error)
+        self.assertIn("Gold für Münster", result.text)
+        self.assertEqual(result.method, "textract")
+
     def extraction(self, text: str) -> ExtractionResult:
         return ExtractionResult(
             file_name="fixture.html",
