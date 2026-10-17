@@ -44,3 +44,10 @@ The gateway is disabled until configured by an authorized operator,
 and mocked tests are not proof of a live deployment.
 
 We invite technical feedback through GitHub Issues.
+
+## Governed automatic model selection
+
+The authenticated humanitarian workflows support opt-in, server-configured
+automatic model selection. See [model routing](docs/MODEL_ROUTING.md) for the
+quality/cost/latency algorithm, confidentiality approvals and validation.
+No profiles or live model calls are enabled by this code change.

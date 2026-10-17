@@ -31,7 +31,7 @@ export class ModelPolicyError extends Error {
 }
 
 function modelList(env, provider) {
-  const config = PROVIDERS[provider];
+  const config = Object.hasOwn(PROVIDERS, provider) ? PROVIDERS[provider] : undefined;
   return config ? (env[config.models] || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
 }
 
@@ -68,7 +68,7 @@ export const HUMANITARIAN_SYSTEM_INSTRUCTION = [
 ].join(" ");
 
 function ensureConfiguration({ provider, model, content, env }) {
-  const spec = PROVIDERS[provider];
+  const spec = Object.hasOwn(PROVIDERS, provider) ? PROVIDERS[provider] : undefined;
   if (!spec) throw new ModelPolicyError("provider_not_supported");
   if (typeof model !== "string" || !MODEL_PATTERN.test(model)) {
     throw new ModelPolicyError("invalid_model");
@@ -198,6 +198,7 @@ export async function invokeGovernedModel(
   try {
     const response = await fetchImpl(request.url, {
       method: "POST",
+      redirect: "error",
       headers: request.headers,
       body: JSON.stringify(request.body),
       signal: AbortSignal.timeout(30000)

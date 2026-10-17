@@ -85,3 +85,54 @@ test("fixed disaster route uses policy, never trusts user action or prompt, and 
 test("only approved paths are handled",async()=>{
   assert.equal(await handleZ1AiApi({method:"GET"}, {}, new URL("http://localhost/api/unrelated"),{}),false);
 });
+
+test("auto routing uses only server profiles, audits selection and never fans out", async () => {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), 'z1-routing-'));
+  const saved = {...process.env};
+  const oldFetch = globalThis.fetch;
+  let calls = 0;
+  Object.assign(process.env, {
+    Z1_MODEL_GATEWAY_TOKEN: 'routing-test-token', OPENAI_API_KEY: 'test-only-key',
+    Z1_OPENAI_MODELS: 'model-a,model-b', Z1_MODEL_AUDIT_PATH: path.join(tmp, 'audit.jsonl'),
+    Z1_MODEL_ROUTING_PROFILES: JSON.stringify(['model-a', 'model-b'].map((model, index) => ({
+      provider: 'openai', model, action: 'disaster_response', quality: 0.8 + index * 0.1,
+      costPerRequest: 0.01, latencyMs: 1000, evaluationId: 'eval-test',
+      validUntil: new Date(Date.now() + 60000).toISOString(), allowConfidential: true
+    })))
+  });
+  globalThis.fetch = async (_url, options) => {
+    calls++;
+    assert.equal(JSON.parse(options.body).model, 'model-b');
+    assert.equal(options.redirect, 'error');
+    return {ok: true, json: async () => ({output_text: 'General safety guidance.'})};
+  };
+  const body = {provider: 'auto', region: 'Muenster', hazard: 'flood',
+    profiles: [{provider: 'attacker'}], allowConfidential: true};
+  const route = () => runRoute('/api/z1/ai/disaster-brief', 'POST', 'routing-test-token', body);
+  try {
+    const result = await route();
+    assert.equal(result.status, 200);
+    assert.equal(result.body.model, 'model-b');
+    assert.equal(result.body.routing.evaluationId, 'eval-test');
+    assert.equal(calls, 1);
+    const wire = await readFile(process.env.Z1_MODEL_AUDIT_PATH, 'utf8');
+    assert.deepEqual(wire.trim().split('\n').map(JSON.parse).map(e => e.event),
+      ['z1_model_routing', 'z1_model_policy', 'z1_model_policy']);
+    assert.ok(!wire.includes('Muenster') && !wire.includes('test-only-key'));
+    process.env.Z1_MODEL_AUDIT_PATH = tmp; // directory: audit write must fail before dispatch
+    assert.notEqual((await route()).status, 200);
+    assert.equal(calls, 1);
+    process.env.Z1_MODEL_AUDIT_PATH = path.join(tmp, 'audit.jsonl');
+    globalThis.fetch = async () => { calls++; return {ok: false}; };
+    assert.equal((await route()).status, 502);
+    assert.equal(calls, 2); // no retry or cross-provider fallback
+    process.env.Z1_MODEL_ROUTING_PROFILES = '[]';
+    assert.equal((await route()).status, 503);
+    assert.equal(calls, 2);
+  } finally {
+    globalThis.fetch = oldFetch;
+    for (const key of Object.keys(process.env)) if (!(key in saved)) delete process.env[key];
+    Object.assign(process.env, saved);
+    await rm(tmp, {recursive: true, force: true});
+  }
+});
