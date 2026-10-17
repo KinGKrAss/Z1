@@ -70,6 +70,7 @@ test("all providers receive the same binding policy in their system field", () =
 
 test("rejects arbitrary providers, URLs, models and invalid text", () => {
   for (const args of [
+    {provider:"constructor", model:"gpt-example-a", content:"x"},
     {provider:"unknown", model:"gpt-example-a", content:"x"},
     {provider:"openai",model:"not-allowlisted",content:"x"},
     {provider:"openai",model:"../../secret",content:"x"},

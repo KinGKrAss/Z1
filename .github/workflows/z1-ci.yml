@@ -39,7 +39,7 @@ jobs:
       - name: Build
         run: npm run build
       - name: Test Z1 humanitarian multi-model gateway
-        run: node --test tests/humanitarian_policy.test.mjs tests/model_policy_gateway.test.mjs tests/z1-ai-api.test.mjs
+        run: node --test tests/humanitarian_policy.test.mjs tests/model_policy_gateway.test.mjs tests/model-router.test.mjs tests/z1-ai-api.test.mjs
       - name: Test Z1 Speak browser policy
         run: npm run test:speak-ui
       - name: Test Z1 Speak backend

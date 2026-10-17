@@ -4,6 +4,8 @@ import { mkdir, appendFile } from "node:fs/promises";
 import path from "node:path";
 import { invokeGovernedModel, listGovernedProviders, ModelPolicyError } from "../core/model_policy_gateway.mjs";
 
+import { selectGovernedModel } from "../core/model_router.mjs";
+
 const WORKFLOWS = Object.freeze({
   "/api/z1/ai/disaster-brief": {
     action: "disaster_response",
@@ -69,10 +71,17 @@ export async function handleZ1AiApi(req, res, url, { readJson, json }) {
       !HAZARDS.has(hazard)) throw new ModelPolicyError("invalid_humanitarian_parameters");
     // No arbitrary prompt, action, URL or tools are ever taken from the client.
     const content = workflow.template(region.trim(), hazard);
+    const automatic = provider === "auto";
+    if (automatic && model !== undefined) throw new ModelPolicyError("auto_model_not_allowed");
+    const selection = automatic ? selectGovernedModel(workflow.action) : { provider, model };
+    if (automatic) await auditModelPolicy({
+      event: "z1_model_routing", action: workflow.action,
+      provider: selection.provider, model: selection.model, ...selection.routing
+    });
     const result = await invokeGovernedModel({
-      provider, model, content, trustedAction: workflow.action
+      provider: selection.provider, model: selection.model, content, trustedAction: workflow.action
     }, { audit: auditModelPolicy });
-    json(res, 200, result);
+    json(res, 200, automatic ? { ...result, routing: selection.routing } : result);
   } catch (error) {
     json(res, error instanceof ModelPolicyError ? error.status : 400, {
       error: error instanceof ModelPolicyError ? error.code : "invalid_request"
