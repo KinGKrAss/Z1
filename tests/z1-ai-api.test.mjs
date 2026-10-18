@@ -227,12 +227,11 @@ test("authenticated hologram workflow creates and polls a ModelScope AI-being im
     assert.equal(created.body.taskId, "12345678-1234-1234-1234-123456789abc");
     assert.equal(calls, 1);
     const polled = await runRoute(
-      created.body.taskUrl.split("?")[0],
+      created.body.taskUrl,
       "GET",
       "hologram-gateway-token",
       undefined
     );
-    // The helper's URL does not include query parameters, so exercise the task route directly with model.
     assert.equal(polled.status, 200);
     assert.equal(polled.body.status, "SUCCEED");
     assert.deepEqual(polled.body.images, ["https://modelscope.cn/generated/hologram.png"]);
