@@ -16,6 +16,7 @@ const env = {
   ZAI_API_KEY: "test-zhipu-secret",
   MISTRAL_API_KEY: "test-mistral-secret",
   COHERE_API_KEY: "test-cohere-secret",
+  MODELSCOPE_API_KEY: "test-modelscope-secret",
   Z1_OPENAI_MODELS: "gpt-example-a,gpt-example-b",
   Z1_XAI_MODELS: "grok-example",
   Z1_ANTHROPIC_MODELS: "claude-example",
@@ -25,7 +26,8 @@ const env = {
   Z1_KIMI_MODELS: "kimi-example",
   Z1_ZHIPU_MODELS: "glm-example",
   Z1_MISTRAL_MODELS: "mistral-example",
-  Z1_COHERE_MODELS: "cohere-example"
+  Z1_COHERE_MODELS: "cohere-example",
+  Z1_MODELSCOPE_MODELS: "Qwen/Qwen3-8B-Instruct"
 };
 const samples = [
   ["openai", "gpt-example-a", "https://api.openai.com/v1/responses"],
@@ -37,12 +39,13 @@ const samples = [
   ["kimi", "kimi-example", "https://api.moonshot.ai/v1/chat/completions"],
   ["zhipu", "glm-example", "https://api.z.ai/api/paas/v4/chat/completions"],
   ["mistral", "mistral-example", "https://api.mistral.ai/v1/chat/completions"],
-  ["cohere", "cohere-example", "https://api.cohere.com/v2/chat"]
+  ["cohere", "cohere-example", "https://api.cohere.com/v2/chat"],
+  ["modelscope", "Qwen/Qwen3-8B-Instruct", "https://api-inference.modelscope.cn/v1/chat/completions"]
 ];
 
 test("provider list contains no secret values", () => {
   const providers = listGovernedProviders(env);
-  assert.equal(providers.length, 10);
+  assert.equal(providers.length, 11);
   assert.ok(providers.every((item) => item.configured && item.policy === "Z1-PEACE-001"));
   assert.ok(!JSON.stringify(providers).includes("secret"));
 });
@@ -117,7 +120,8 @@ test("all ten providers return normalized text using mocked network", async () =
     kimi: {choices:[{message:{content:"Kimi reply"}}]},
     zhipu: {choices:[{message:{content:"GLM reply"}}]},
     mistral: {choices:[{message:{content:"Mistral reply"}}]},
-    cohere: {message:{content:[{type:"text",text:"Cohere reply"}]}}
+    cohere: {message:{content:[{type:"text",text:"Cohere reply"}]}},
+    modelscope: {choices:[{message:{content:"ModelScope reply"}}]}
   };
   for (const [provider, model] of samples) {
     const audit = [];
@@ -167,7 +171,7 @@ test("unconfigured and unknown model IDs remain blocked for new providers", () =
     const keyNames = {
       openai:"OPENAI_API_KEY", xai:"XAI_API_KEY", anthropic:"ANTHROPIC_API_KEY",
       gemini:"GEMINI_API_KEY", deepseek:"DEEPSEEK_API_KEY", qwen:"DASHSCOPE_API_KEY",
-      kimi:"MOONSHOT_API_KEY", zhipu:"ZAI_API_KEY", mistral:"MISTRAL_API_KEY",cohere:"COHERE_API_KEY"
+      kimi:"MOONSHOT_API_KEY", zhipu:"ZAI_API_KEY", mistral:"MISTRAL_API_KEY",cohere:"COHERE_API_KEY", modelscope:"MODELSCOPE_API_KEY"
     };
     delete withoutKeys[keyNames[provider]];
     assert.throws(() => buildGovernedProviderRequest({provider,model,content:"help"}, withoutKeys),
