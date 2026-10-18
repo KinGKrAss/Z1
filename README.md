@@ -37,12 +37,22 @@ Z1 publishes [Z1-PEACE-001](docs/Z1-PEACE-001.md) and an
 for voluntary, vendor-neutral humanitarian safety controls.
 
 The Z1 model gateway supports governed text inference across eleven providers.
-ModelScope additionally has an authenticated image-question route for explicitly
-allowlisted vision models. Requests use server-side credentials, fixed provider
-origins, purpose restrictions and redacted audit records.
+ModelScope additionally has authenticated image-question and hologram-generation
+routes for separately allowlisted vision and image models. The hologram route
+creates a friendly fictional AI being in a luminous 3D hologram style and returns
+an asynchronous task URL that can be polled for the generated image.
+Requests use server-side credentials, fixed provider origins, purpose restrictions
+and redacted audit records. Z1 never fetches a provider-returned image URL.
 This is **not** a change to third-party providers' global models.
 The gateway is disabled until configured by an authorized operator,
 and mocked tests are not proof of a live deployment.
+
+For ModelScope image generation, set the server secrets MODELSCOPE_TOKEN and
+Z1_MODEL_GATEWAY_TOKEN, then allowlist a model in Z1_MODELSCOPE_IMAGE_MODELS
+(for example Qwen/Qwen-Image-2.1). Send an authenticated POST
+/api/z1/ai/hologram with { "model": "...", "description": "..." }.
+The response is 202 with a taskUrl; poll that URL using the same bearer token
+until the task status is SUCCEED. The returned image URL comes from ModelScope.
 
 We invite technical feedback through GitHub Issues.
 
