@@ -2,7 +2,7 @@
 import { mkdir, readFile, rename, writeFile, chmod } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { selectGovernedModel } from "./model_router.mjs";
+import { selectGovernedModel } from "../core/model_router.mjs";
 import { COUNCIL_TASK_TYPES, invokeCouncilModel } from "../core/council_agent_gateway.mjs";
 import { getCouncilRole } from "../core/council_33.mjs";
 
