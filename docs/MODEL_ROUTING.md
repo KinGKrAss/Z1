@@ -52,10 +52,19 @@ The model receives the fixed Z1 policy and a user image as untrusted input; audi
 records a content hash, not the image or question. A supported model card must
 confirm image input before the operator adds its ID to the vision allowlist.
 
+For text-to-image generation, configure the server secret MODELSCOPE_TOKEN and
+a separate image model allowlist, Z1_MODELSCOPE_IMAGE_MODELS. The authenticated
+POST /api/z1/ai/hologram accepts an allowlisted image model and a bounded visual
+description, then submits a server-owned prompt for a friendly fictional AI being
+in a luminous hologram style. ModelScope runs this as an asynchronous image task;
+the response contains a protected taskUrl to poll. Completed tasks return the
+ModelScope image URL. Z1 never fetches that URL. The task endpoint remains protected
+by Z1_MODEL_GATEWAY_TOKEN and image-generation requests are audited by content hash.
+
 A collection is a catalog grouping, not a single runnable model. Z1 does not
-bulk-download every collection entry or execute repository code. Speech, image
-generation/editing, embeddings, datasets, and local-weight entries still require
-their own task adapters. No ModelScope account or API token is enabled by default.
+bulk-download every collection entry or execute repository code. Image editing,
+speech, embeddings, datasets, and local-weight entries still require their own
+task adapters. No ModelScope account or API token is enabled by default.
 
 Client-provided profiles, quality scores and confidentiality labels cannot change
 the server configuration. The route controls the action and prompt template.
