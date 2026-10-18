@@ -37,7 +37,15 @@ IDs such as `Qwen/Qwen3.5-35B-A3B`. ModelScope IDs are validated as
 `namespace/model`; requests go only to the fixed official inference endpoint.
 
 For image understanding, configure `Z1_MODELSCOPE_VISION_MODELS` with model IDs
-that are also in `Z1_MODELSCOPE_MODELS`. The authenticated endpoint
+that are also in `Z1_MODELSCOPE_MODELS`. For the documented Qwen3.5 image-input
+model, the operator-side configuration is:
+
+```text
+MODELSCOPE_TOKEN=<store as a server secret>
+Z1_MODELSCOPE_MODELS=Qwen/Qwen3.5-35B-A3B
+Z1_MODELSCOPE_VISION_MODELS=Qwen/Qwen3.5-35B-A3B
+```
+ The authenticated endpoint
 `POST /api/z1/ai/vision-question` accepts one question and one inline PNG, JPEG,
 or WebP data URL (decoded image limit: 4 MiB). It does not fetch remote URLs.
 The model receives the fixed Z1 policy and a user image as untrusted input; audit
