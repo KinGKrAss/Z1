@@ -242,6 +242,6 @@ export class AutonomousCouncilRuntime {
     const counts = Object.fromEntries(["queued","running","completed","failed"].map(status =>
       [status, this.state.tasks.filter(task=>task.status===status).length]));
     return { enabled:this.env.Z1_AGENTS_ENABLED === "true", running:this.started, counts,
-      modelConfigured:Boolean(this.env.Z1_MODEL_ROUTING_PROFILES), persistentStore:true };
+      modelConfigured:Boolean(this.env.Z1_MODEL_ROUTING_PROFILES), storageBackend:"local_json", durableDiskRequired:true };
   }
 }
