@@ -6,6 +6,7 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { gatewayStatus, authorize, sealMessage, openMessage } from "../core/diplomatic_family_gateway.mjs";
 import { handleGoBtcPayApi } from "./gobtcpay.mjs";
+import { handleZ1GitHubApi } from "./z1-github-api.mjs";
 
 const port = Number(process.env.Z1_API_PORT ?? 3001);
 const host = process.env.Z1_API_HOST ?? "127.0.0.1";
@@ -60,6 +61,7 @@ const server = http.createServer(async (req, res) => {
   if (await handleGoBtcPayApi(req, res, url, { json, readJson })) return;
   if (await handleSpeakApi(req, res, url, { json, readJson })) return;
   if (await handleZ1AiApi(req, res, url, { json, readJson })) return;
+  if (await handleZ1GitHubApi(req, res, url, { json })) return;
   if (req.method === "GET" && url.pathname === "/health") return json(res, 200, { status: "online", service: "z1-api", runtime: "node", node: process.version });
   if (req.method === "GET" && url.pathname === "/api/z1/peace-policy") return json(res, 200, PEACE_POLICY);
   if (req.method === "GET" && url.pathname === "/api/z1/status") return json(res, 200, await coreStatus());
