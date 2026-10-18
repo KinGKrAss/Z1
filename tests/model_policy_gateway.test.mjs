@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   buildGovernedProviderRequest, invokeGovernedModel, listGovernedProviders,
+  submitGovernedImageGeneration, getGovernedImageGeneration,
   HUMANITARIAN_SYSTEM_INSTRUCTION
 } from "../core/model_policy_gateway.mjs";
 
@@ -16,6 +17,7 @@ const env = {
   ZAI_API_KEY: "test-zhipu-secret",
   MISTRAL_API_KEY: "test-mistral-secret",
   COHERE_API_KEY: "test-cohere-secret",
+  MODELSCOPE_TOKEN: "test-modelscope-secret",
   Z1_OPENAI_MODELS: "gpt-example-a,gpt-example-b",
   Z1_XAI_MODELS: "grok-example",
   Z1_ANTHROPIC_MODELS: "claude-example",
@@ -25,7 +27,9 @@ const env = {
   Z1_KIMI_MODELS: "kimi-example",
   Z1_ZHIPU_MODELS: "glm-example",
   Z1_MISTRAL_MODELS: "mistral-example",
-  Z1_COHERE_MODELS: "cohere-example"
+  Z1_COHERE_MODELS: "cohere-example",
+  Z1_MODELSCOPE_MODELS: "Qwen/Qwen3.5-35B-A3B",
+  Z1_MODELSCOPE_VISION_MODELS: "Qwen/Qwen3.5-35B-A3B"
 };
 const samples = [
   ["openai", "gpt-example-a", "https://api.openai.com/v1/responses"],
@@ -37,13 +41,16 @@ const samples = [
   ["kimi", "kimi-example", "https://api.moonshot.ai/v1/chat/completions"],
   ["zhipu", "glm-example", "https://api.z.ai/api/paas/v4/chat/completions"],
   ["mistral", "mistral-example", "https://api.mistral.ai/v1/chat/completions"],
-  ["cohere", "cohere-example", "https://api.cohere.com/v2/chat"]
+  ["cohere", "cohere-example", "https://api.cohere.com/v2/chat"],
+  ["modelscope", "Qwen/Qwen3.5-35B-A3B", "https://api-inference.modelscope.cn/v1/chat/completions"]
 ];
 
 test("provider list contains no secret values", () => {
   const providers = listGovernedProviders(env);
-  assert.equal(providers.length, 10);
+  assert.equal(providers.length, 11);
   assert.ok(providers.every((item) => item.configured && item.policy === "Z1-PEACE-001"));
+  assert.deepEqual(providers.find(item => item.provider === "modelscope").capabilities,
+    ["text", "image-understanding"]);
   assert.ok(!JSON.stringify(providers).includes("secret"));
 });
 
@@ -74,6 +81,8 @@ test("rejects arbitrary providers, URLs, models and invalid text", () => {
     {provider:"unknown", model:"gpt-example-a", content:"x"},
     {provider:"openai",model:"not-allowlisted",content:"x"},
     {provider:"openai",model:"../../secret",content:"x"},
+    {provider:"modelscope",model:"Qwen/../unsafe",content:"x"},
+    {provider:"modelscope",model:"Qwen/model/extra",content:"x"},
     {provider:"openai",model:"gpt-example-a",content:""}
   ]) assert.throws(() => buildGovernedProviderRequest(args, env));
 });
@@ -106,7 +115,7 @@ test("audit sink failure is fail-closed", async () => {
   assert.equal(requests, 0);
 });
 
-test("all ten providers return normalized text using mocked network", async () => {
+test("all eleven providers return normalized text using mocked network", async () => {
   const answers = {
     openai: {output: [{content:[{type:"output_text",text:"OpenAI reply"}]}]},
     xai: {choices:[{message:{content:"Grok reply"}}]},
@@ -117,7 +126,8 @@ test("all ten providers return normalized text using mocked network", async () =
     kimi: {choices:[{message:{content:"Kimi reply"}}]},
     zhipu: {choices:[{message:{content:"GLM reply"}}]},
     mistral: {choices:[{message:{content:"Mistral reply"}}]},
-    cohere: {message:{content:[{type:"text",text:"Cohere reply"}]}}
+    cohere: {message:{content:[{type:"text",text:"Cohere reply"}]}},
+    modelscope: {choices:[{message:{content:"ModelScope reply"}}]}
   };
   for (const [provider, model] of samples) {
     const audit = [];
@@ -161,16 +171,101 @@ test("missing audit is forbidden", async () => {
 
 test("unconfigured and unknown model IDs remain blocked for new providers", () => {
   for (const [provider, model] of samples) {
-    assert.throws(() => buildGovernedProviderRequest({provider,model:"arbitrary-unknown",content:"help"}, env),
+    const unknownModel = provider === "modelscope" ? "unknown/model" : "arbitrary-unknown";
+    assert.throws(() => buildGovernedProviderRequest({provider,model:unknownModel,content:"help"}, env),
       (err) => err.code === "model_not_allowlisted");
     const withoutKeys = {...env};
     const keyNames = {
       openai:"OPENAI_API_KEY", xai:"XAI_API_KEY", anthropic:"ANTHROPIC_API_KEY",
       gemini:"GEMINI_API_KEY", deepseek:"DEEPSEEK_API_KEY", qwen:"DASHSCOPE_API_KEY",
-      kimi:"MOONSHOT_API_KEY", zhipu:"ZAI_API_KEY", mistral:"MISTRAL_API_KEY",cohere:"COHERE_API_KEY"
+      kimi:"MOONSHOT_API_KEY", zhipu:"ZAI_API_KEY", mistral:"MISTRAL_API_KEY",cohere:"COHERE_API_KEY", modelscope:"MODELSCOPE_TOKEN"
     };
     delete withoutKeys[keyNames[provider]];
     assert.throws(() => buildGovernedProviderRequest({provider,model,content:"help"}, withoutKeys),
       (err) => err.code === "provider_not_configured");
   }
+});
+
+
+test("ModelScope image adapter accepts bounded inline images only", () => {
+  const content = [
+    {type: "text", text: "Describe the image safely."},
+    {type: "image_url", image_url: {url: "data:image/png;base64,aGVsbG8="}}
+  ];
+  const request = buildGovernedProviderRequest({
+    provider: "modelscope", model: "Qwen/Qwen3.5-35B-A3B", content
+  }, env);
+  assert.equal(request.url, "https://api-inference.modelscope.cn/v1/chat/completions");
+  assert.deepEqual(request.body.messages[1].content, content);
+  assert.equal(request.headers.Authorization, "Bearer test-modelscope-secret");
+  for (const invalid of [
+    [{type:"text",text:"Question"}, {type:"image_url",image_url:{url:"https://example.com/image.png"}}],
+    [{type:"text",text:"Question"}, {type:"image_url",image_url:{url:"data:image/svg+xml;base64,aGVsbG8="}}],
+    [{type:"text",text:"Question"}, {type:"image_url",image_url:{url:"data:image/png;base64,aGVsbG8=\n"}}]
+  ]) assert.throws(() => buildGovernedProviderRequest({
+    provider:"modelscope", model:"Qwen/Qwen3.5-35B-A3B", content:invalid
+  }, env), {code:"invalid_content"});
+  assert.throws(() => buildGovernedProviderRequest({
+    provider:"openai", model:"gpt-example-a", content
+  }, env), {code:"invalid_content"});
+});
+
+test("ModelScope image generation submits an audited async task and polls only the fixed task endpoint", async () => {
+  const imageEnv = {...env, Z1_MODELSCOPE_IMAGE_MODELS: "Qwen/Qwen-Image-2.1"};
+  const events = [];
+  let calls = 0;
+  const submitted = await submitGovernedImageGeneration({
+    model: "Qwen/Qwen-Image-2.1",
+    prompt: "A peaceful blue holographic AI character",
+    trustedAction: "education"
+  }, {
+    env: imageEnv,
+    audit: async event => events.push(event),
+    fetchImpl: async (url, options) => {
+      calls++;
+      assert.equal(url, "https://api-inference.modelscope.cn/v1/images/generations");
+      assert.equal(options.method, "POST");
+      assert.equal(options.redirect, "error");
+      assert.equal(options.headers["X-ModelScope-Async-Mode"], "true");
+      assert.equal(options.headers.Authorization, "Bearer test-modelscope-secret");
+      assert.deepEqual(JSON.parse(options.body), {
+        model: "Qwen/Qwen-Image-2.1", prompt: "A peaceful blue holographic AI character"
+      });
+      return {ok:true, json:async()=>({task_id:"12345678-1234-1234-1234-123456789abc"})};
+    }
+  });
+  assert.equal(submitted.status, "PENDING");
+  assert.equal(submitted.taskId, "12345678-1234-1234-1234-123456789abc");
+  assert.equal(calls, 1);
+  assert.deepEqual(events.map(event=>event.outcome), ["approved", "submitted"]);
+  assert.ok(!JSON.stringify(events).includes("A peaceful blue holographic AI character"));
+  const result = await getGovernedImageGeneration({
+    model: "Qwen/Qwen-Image-2.1", taskId: submitted.taskId
+  }, {
+    env: imageEnv,
+    fetchImpl: async (url, options) => {
+      calls++;
+      assert.equal(url, "https://api-inference.modelscope.cn/v1/tasks/12345678-1234-1234-1234-123456789abc");
+      assert.equal(options.method, "GET");
+      assert.equal(options.headers["X-ModelScope-Task-Type"], "image_generation");
+      return {ok:true, json:async()=>({
+        task_status:"SUCCEED", output_images:["https://modelscope.cn/generated/hologram.png"]
+      })};
+    }
+  });
+  assert.equal(result.status, "SUCCEED");
+  assert.deepEqual(result.images, ["https://modelscope.cn/generated/hologram.png"]);
+  assert.equal(calls, 2);
+});
+
+test("ModelScope image generation rejects non-allowlisted models and malformed task IDs before network access", async () => {
+  let calls = 0;
+  const imageEnv = {...env, Z1_MODELSCOPE_IMAGE_MODELS: "Qwen/Qwen-Image-2.1"};
+  await assert.rejects(submitGovernedImageGeneration({
+    model:"Qwen/other", prompt:"a digital holographic being", trustedAction:"education"
+  }, {env:imageEnv, audit:async()=>{}, fetchImpl:async()=>{calls++;}}), {code:"model_not_allowlisted"});
+  await assert.rejects(getGovernedImageGeneration({
+    model:"Qwen/Qwen-Image-2.1", taskId:"../../attacker"
+  }, {env:imageEnv, fetchImpl:async()=>{calls++;}}), {code:"invalid_image_task"});
+  assert.equal(calls, 0);
 });

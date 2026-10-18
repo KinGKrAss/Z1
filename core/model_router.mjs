@@ -3,6 +3,10 @@ import { listGovernedProviders, ModelPolicyError } from './model_policy_gateway.
 import { evaluateHumanitarianAction } from './humanitarian_policy.mjs';
 
 const identifier = /^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$/;
+const modelscopeModelId = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}\/[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/;
+const validModelId = (provider, model) => provider === 'modelscope'
+  ? typeof model === 'string' && modelscopeModelId.test(model)
+  : typeof model === 'string' && identifier.test(model);
 const finiteNonnegative = value => Number.isFinite(value) && value >= 0;
 
 export function selectGovernedModel(trustedAction, env = process.env, now = Date.now()) {
@@ -19,7 +23,7 @@ export function selectGovernedModel(trustedAction, env = process.env, now = Date
   for (const p of profiles) {
     if (!p || typeof p !== 'object' ||
         typeof p.provider !== 'string' || !identifier.test(p.provider) ||
-        typeof p.model !== 'string' || !identifier.test(p.model) ||
+        !validModelId(p.provider, p.model) ||
         typeof p.action !== 'string' || !evaluateHumanitarianAction(p.action).allowed ||
         !finiteNonnegative(p.quality) || p.quality > 1 ||
         !finiteNonnegative(p.costPerRequest) || !finiteNonnegative(p.latencyMs) ||

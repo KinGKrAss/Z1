@@ -28,6 +28,44 @@ underlying benchmark. Use a consistent task-specific evaluation set. Do not inve
 performance values to activate routing. No routing profiles are enabled by default.
 Malformed or duplicate configuration fails closed, as does an empty eligible set.
 
+## ModelScope
+
+ModelScope is available as provider `modelscope` through its OpenAI-compatible
+inference endpoint. Configure the server secret `MODELSCOPE_TOKEN` and the
+explicit comma-separated model allowlist `Z1_MODELSCOPE_MODELS`, using namespaced
+IDs such as `Qwen/Qwen3.5-35B-A3B`. ModelScope IDs are validated as
+`namespace/model`; requests go only to the fixed official inference endpoint.
+
+For image understanding, configure `Z1_MODELSCOPE_VISION_MODELS` with model IDs
+that are also in `Z1_MODELSCOPE_MODELS`. For the documented Qwen3.5 image-input
+model, the operator-side configuration is:
+
+```text
+MODELSCOPE_TOKEN=<store as a server secret>
+Z1_MODELSCOPE_MODELS=Qwen/Qwen3.5-35B-A3B
+Z1_MODELSCOPE_VISION_MODELS=Qwen/Qwen3.5-35B-A3B
+```
+ The authenticated endpoint
+`POST /api/z1/ai/vision-question` accepts one question and one inline PNG, JPEG,
+or WebP data URL (decoded image limit: 4 MiB). It does not fetch remote URLs.
+The model receives the fixed Z1 policy and a user image as untrusted input; audit
+records a content hash, not the image or question. A supported model card must
+confirm image input before the operator adds its ID to the vision allowlist.
+
+For text-to-image generation, configure the server secret MODELSCOPE_TOKEN and
+a separate image model allowlist, Z1_MODELSCOPE_IMAGE_MODELS. The authenticated
+POST /api/z1/ai/hologram accepts an allowlisted image model and a bounded visual
+description, then submits a server-owned prompt for a friendly fictional AI being
+in a luminous hologram style. ModelScope runs this as an asynchronous image task;
+the response contains a protected taskUrl to poll. Completed tasks return the
+ModelScope image URL. Z1 never fetches that URL. The task endpoint remains protected
+by Z1_MODEL_GATEWAY_TOKEN and image-generation requests are audited by content hash.
+
+A collection is a catalog grouping, not a single runnable model. Z1 does not
+bulk-download every collection entry or execute repository code. Image editing,
+speech, embeddings, datasets, and local-weight entries still require their own
+task adapters. No ModelScope account or API token is enabled by default.
+
 Client-provided profiles, quality scores and confidentiality labels cannot change
 the server configuration. The route controls the action and prompt template.
 A supplied model with `provider: "auto"` is rejected. The router returns the selected
@@ -58,4 +96,5 @@ used for testing. No live model request was made as part of these tests.
 
 Run `node --test tests/model-router.test.mjs tests/model_policy_gateway.test.mjs tests/z1-ai-api.test.mjs tests/humanitarian_policy.test.mjs`.
 Tests cover stable ranking, missing/expired approvals, invalid configuration,
-authenticated routing, redacted audit, audit failure, and no automatic fallback.
+authenticated routing, redacted audit, audit failure, no automatic fallback,
+and ModelScope namespaced model allowlisting and response normalization.

@@ -17,12 +17,14 @@ function json(res, status, body) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(body));
 }
-function readJson(req) {
+function readJson(req, maxBytes = 1024 * 1024) {
   return new Promise((resolve, reject) => {
     let body = "";
+    let bytes = 0;
     req.on("data", (chunk) => {
+      bytes += chunk.length;
+      if (bytes > maxBytes) { req.destroy(); reject(new Error("request body too large")); return; }
       body += chunk.toString();
-      if (body.length > 1024 * 1024) { req.destroy(); reject(new Error("request body too large")); }
     });
     req.on("end", () => { try { resolve(body ? JSON.parse(body) : {}); } catch (error) { reject(error); } });
     req.on("error", reject);
