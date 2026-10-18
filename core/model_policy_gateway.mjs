@@ -259,7 +259,7 @@ function imageGenerationKey(model, prompt, env) {
   if (!MODELSCOPE_MODEL_PATTERN.test(model || "")) throw new ModelPolicyError("invalid_model");
   if (!imageModelList(env).includes(model)) throw new ModelPolicyError("model_not_allowlisted", 403);
   if (typeof prompt !== "string" || prompt.trim().length < 3 || prompt.length > 1200 ||
-      /[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/u.test(prompt)) {
+      /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/u.test(prompt)) {
     throw new ModelPolicyError("invalid_image_prompt");
   }
   const key = env.MODELSCOPE_TOKEN;
@@ -349,7 +349,7 @@ export async function getGovernedImageGeneration(
       throw new ModelPolicyError("invalid_upstream_response", 502);
     }
     const images = status === "SUCCEED" && Array.isArray(data.output_images)
-      ? data.output_images.filter(value => typeof value === "string" && /^https:\\/\\//i.test(value)).slice(0, 1)
+    const images = status === "SUCCEED" && Array.isArray(data.output_images)
       : [];
     if (status === "SUCCEED" && images.length === 0) throw new ModelPolicyError("invalid_upstream_response", 502);
     return { provider: "modelscope", model, policy: PEACE_POLICY.id, taskId, status, images };
