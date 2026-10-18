@@ -27,7 +27,7 @@ For a repeatable bootstrap, use `scripts/z1-cloud-run-bootstrap.sh` from a trust
 bash scripts/z1-cloud-run-bootstrap.sh --project YOUR_PROJECT_ID --region europe-west3
 ```
 
-The Google identity running the script needs permission to enable APIs, create service accounts and Workload Identity Federation resources, and grant project IAM roles. The script enables the required APIs, creates the Artifact Registry repository, dedicated runtime and deployer service accounts, two empty Secret Manager secrets, and a GitHub OIDC provider restricted to `KinGKrAss/Z1` on `refs/heads/main`. It grants the runtime account access only to the two secrets and lets the GitHub identity impersonate only the dedicated deployer account. It refuses to overwrite an existing WIF provider so an existing trust policy is not silently changed.
+The Google identity running the script needs permission to enable APIs, create service accounts and Workload Identity Federation resources, and grant project IAM roles. The script enables the required APIs, creates the Artifact Registry repository, dedicated runtime and deployer service accounts, two empty Secret Manager secrets, and a GitHub OIDC provider restricted to GitHub repository ID `1249461106` (`KinGKrAss/Z1`) on `refs/heads/main`. Using the immutable repository ID avoids trusting a repository name that could later be reused. It grants the runtime account access only to the two secrets and lets the GitHub identity impersonate only the dedicated deployer account. It refuses to overwrite an existing WIF provider so an existing trust policy is not silently changed.
 
 The script does not set GitHub repository configuration and never requests or prints secret values. Copy the printed values into these GitHub repository settings:
 
