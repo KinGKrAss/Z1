@@ -89,6 +89,13 @@ gcloud services enable \
   sts.googleapis.com \
   --project="$PROJECT_ID"
 
+if gcloud iam workload-identity-pools providers describe "$WIF_PROVIDER" \
+  --workload-identity-pool="$WIF_POOL" \
+  --location=global --project="$PROJECT_ID" >/dev/null 2>&1; then
+  printf 'WIF provider %s already exists. Inspect its issuer, attribute mappings, and condition before using it; this script will not overwrite it.\n' "$WIF_PROVIDER" >&2
+  exit 1
+fi
+
 if ! gcloud artifacts repositories describe "$ARTIFACT_REPOSITORY" \
   --location="$REGION" --project="$PROJECT_ID" >/dev/null 2>&1; then
   gcloud artifacts repositories create "$ARTIFACT_REPOSITORY" \
@@ -154,13 +161,6 @@ if ! gcloud iam workload-identity-pools describe "$WIF_POOL" \
     --location=global \
     --display-name="GitHub Actions for Z1" \
     --project="$PROJECT_ID"
-fi
-
-if gcloud iam workload-identity-pools providers describe "$WIF_PROVIDER" \
-  --workload-identity-pool="$WIF_POOL" \
-  --location=global --project="$PROJECT_ID" >/dev/null 2>&1; then
-  printf 'WIF provider %s already exists. Inspect its issuer, attribute mappings, and condition before using it; this script will not overwrite it.\n' "$WIF_PROVIDER" >&2
-  exit 1
 fi
 
 gcloud iam workload-identity-pools providers create-oidc "$WIF_PROVIDER" \
