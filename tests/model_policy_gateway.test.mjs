@@ -111,7 +111,7 @@ test("audit sink failure is fail-closed", async () => {
   assert.equal(requests, 0);
 });
 
-test("all ten providers return normalized text using mocked network", async () => {
+test("all eleven providers return normalized text using mocked network", async () => {
   const answers = {
     openai: {output: [{content:[{type:"output_text",text:"OpenAI reply"}]}]},
     xai: {choices:[{message:{content:"Grok reply"}}]},
@@ -167,7 +167,8 @@ test("missing audit is forbidden", async () => {
 
 test("unconfigured and unknown model IDs remain blocked for new providers", () => {
   for (const [provider, model] of samples) {
-    assert.throws(() => buildGovernedProviderRequest({provider,model:"arbitrary-unknown",content:"help"}, env),
+    const unknownModel = provider === "modelscope" ? "unknown/model" : "arbitrary-unknown";
+    assert.throws(() => buildGovernedProviderRequest({provider,model:unknownModel,content:"help"}, env),
       (err) => err.code === "model_not_allowlisted");
     const withoutKeys = {...env};
     const keyNames = {
