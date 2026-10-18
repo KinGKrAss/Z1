@@ -44,6 +44,8 @@ jobs:
         run: npm run test:github-api
       - name: Test isolated GitHub tools server
         run: npm run test:github-api-server
+      - name: Build private GitHub tools container
+        run: docker build --file Dockerfile.z1-github-tools --tag z1-github-tools:ci .
       - name: Test Z1 Speak browser policy
         run: npm run test:speak-ui
       - name: Test Z1 Speak backend
