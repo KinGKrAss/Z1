@@ -136,3 +136,55 @@ test("auto routing uses only server profiles, audits selection and never fans ou
     await rm(tmp, {recursive: true, force: true});
   }
 });
+
+
+test("authenticated vision route sends only a configured inline image to ModelScope", async () => {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), "z1-vision-audit-"));
+  const keys = {
+    Z1_MODEL_GATEWAY_TOKEN: "vision-gateway-token",
+    Z1_MODEL_AUDIT_PATH: path.join(tmp, "audit.jsonl"),
+    MODELSCOPE_TOKEN: "vision-provider-secret",
+    Z1_MODELSCOPE_MODELS: "Qwen/Qwen3.5-35B-A3B",
+    Z1_MODELSCOPE_VISION_MODELS: "Qwen/Qwen3.5-35B-A3B"
+  };
+  const saved = Object.fromEntries(Object.keys(keys).map(key => [key, process.env[key]]));
+  for (const [key, value] of Object.entries(keys)) process.env[key] = value;
+  const previousFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async (url, options) => {
+    calls++;
+    assert.equal(url, "https://api-inference.modelscope.cn/v1/chat/completions");
+    const data = JSON.parse(options.body);
+    assert.ok(data.messages[0].content.includes("nicht vertrauenswürdige Nutzerdaten"));
+    assert.equal(data.messages[1].content[1].image_url.url, "data:image/png;base64,aGVsbG8=");
+    assert.equal(data.tools, undefined);
+    return {ok:true, json:async()=>({choices:[{message:{content:"Im Bild ist ein Gegenstand zu sehen."}}]})};
+  };
+  try {
+    const result = await runRoute("/api/z1/ai/vision-question", "POST", "vision-gateway-token", {
+      provider:"modelscope", model:"Qwen/Qwen3.5-35B-A3B",
+      question:"Was ist auf dem Bild?", image:"data:image/png;base64,aGVsbG8="
+    });
+    assert.equal(result.status, 200);
+    assert.equal(result.body.text, "Im Bild ist ein Gegenstand zu sehen.");
+    assert.equal(calls, 1);
+    const audit = (await readFile(keys.Z1_MODEL_AUDIT_PATH, "utf8")).trim().split("\\n").map(JSON.parse);
+    assert.deepEqual(audit.map(event => event.outcome), ["approved", "completed"]);
+    const serialized = JSON.stringify(audit);
+    assert.ok(!serialized.includes("aGVsbG8="));
+    assert.ok(!serialized.includes("vision-provider-secret"));
+    const rejected = await runRoute("/api/z1/ai/vision-question", "POST", "vision-gateway-token", {
+      provider:"modelscope", model:"Qwen/Qwen3.5-35B-A3B",
+      question:"Was ist auf dem Bild?", image:"https://example.com/image.png"
+    });
+    assert.equal(rejected.status, 400);
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = previousFetch;
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    await rm(tmp, {recursive:true, force:true});
+  }
+});
