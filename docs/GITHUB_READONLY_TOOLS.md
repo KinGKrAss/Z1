@@ -21,14 +21,25 @@ The isolated service in `runtime/z1-github-api-server.mjs` exposes only `/health
 
 ### One-time Google Cloud setup
 
-1. Choose a Google Cloud project and region. Enable Cloud Run, Artifact Registry, Secret Manager, IAM, IAM Credentials, and Security Token Service APIs. Create a Docker Artifact Registry repository in that region.
-2. Create a runtime service account for the service. Create Secret Manager secrets named `z1-github-tool-token` and `z1-github-token`. Add secret versions directly in Secret Manager; never place their values in GitHub or this repository. Grant the runtime service account `roles/secretmanager.secretAccessor` on those two secrets only.
-3. Create a separate deployment service account. Grant it Cloud Run deployment and Artifact Registry write permissions, plus `roles/iam.serviceAccountUser` on the runtime service account.
-4. Configure Workload Identity Federation for GitHub Actions. Restrict the provider to repository `KinGKrAss/Z1` and ref `refs/heads/main`; avoid a long-lived service-account JSON key.
-5. Add these GitHub repository variables: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_ARTIFACT_REPOSITORY`, `CLOUD_RUN_SERVICE`, and `GCP_RUNTIME_SERVICE_ACCOUNT`.
-6. Add these GitHub Actions secrets: `GCP_WIF_PROVIDER` (full provider resource name) and `GCP_DEPLOYER_SERVICE_ACCOUNT` (deployment service-account email).
+For a repeatable bootstrap, use `scripts/z1-cloud-run-bootstrap.sh` from a trusted workstation with an authenticated `gcloud` CLI:
 
-The GitHub token stored in `z1-github-token` must be read-only and scoped only to `KinGKrAss/Z1). The service requires repository metadata, contents, commit-status, and Actions read access. Generate a separate high-entropy value for `z1-github-tool-token`; trusted callers must send it as a Bearer token in addition to authenticating to private Cloud Run. Give only approved callers the Cloud Run Invoker role.
+```sh
+bash scripts/z1-cloud-run-bootstrap.sh --project YOUR_PROJECT_ID --region europe-west3
+```
+
+The Google identity running the script needs permission to enable APIs, create service accounts and Workload Identity Federation resources, and grant project IAM roles. The script enables the required APIs, creates the Artifact Registry repository, dedicated runtime and deployer service accounts, two empty Secret Manager secrets, and a GitHub OIDC provider restricted to GitHub repository ID `1249461106` (`KinGKrAss/Z1`) on `refs/heads/main`. Using the immutable repository ID avoids trusting a repository name that could later be reused. It grants the runtime account access only to the two secrets and lets the GitHub identity impersonate only the dedicated deployer account. It refuses to overwrite an existing WIF provider so an existing trust policy is not silently changed.
+
+The script does not set GitHub repository configuration and never requests or prints secret values. Copy the printed values into these GitHub repository settings:
+
+- Variables: `GCP_PROJECT_ID`, `GCP_REGION`, `GCP_ARTIFACT_REPOSITORY`, `CLOUD_RUN_SERVICE`, and `GCP_RUNTIME_SERVICE_ACCOUNT`.
+- Actions secrets: `GCP_WIF_PROVIDER` (full provider resource name) and `GCP_DEPLOYER_SERVICE_ACCOUNT` (deployer service-account email).
+
+Add active versions directly in Google Cloud Secret Manager before deployment:
+
+- `z1-github-tool-token`: a separate high-entropy token for trusted callers.
+- `z1-github-token`: a read-only GitHub token scoped only to `KinGKrAss/Z1`, with repository metadata, contents, commit-status, and Actions read access.
+
+The bootstrap grants the deployer `roles/run.admin` and `roles/artifactregistry.writer` at the project level, plus `roles/iam.serviceAccountUser` on the runtime service account. Use a dedicated Google Cloud project for this service where possible. Cloud Run remains private; grant Cloud Run Invoker only to approved callers after deployment. Caller requests also need the app-level bearer token.
 
 After setup, run **Deploy Z1 GitHub tools to Cloud Run** from GitHub Actions with branch `main`. The workflow builds and pushes the isolated image, deploys the private Cloud Run service, and prints its URL. It does not make the service public or configure a caller identity.
 
