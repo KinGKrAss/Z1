@@ -196,7 +196,7 @@ test("ModelScope image adapter accepts bounded inline images only", () => {
   }, env);
   assert.equal(request.url, "https://api-inference.modelscope.cn/v1/chat/completions");
   assert.deepEqual(request.body.messages[1].content, content);
-  assert.ok(!JSON.stringify(request.headers).includes("test-modelscope-secret"));
+  assert.equal(request.headers.Authorization, "Bearer test-modelscope-secret");
   for (const invalid of [
     [{type:"text",text:"Question"}, {type:"image_url",image_url:{url:"https://example.com/image.png"}}],
     [{type:"text",text:"Question"}, {type:"image_url",image_url:{url:"data:image/svg+xml;base64,aGVsbG8="}}],
