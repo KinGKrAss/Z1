@@ -17,7 +17,8 @@ const PROVIDERS = Object.freeze({
   kimi: { key: "MOONSHOT_API_KEY", models: "Z1_KIMI_MODELS" },
   zhipu: { key: "ZAI_API_KEY", models: "Z1_ZHIPU_MODELS" },
   mistral: { key: "MISTRAL_API_KEY", models: "Z1_MISTRAL_MODELS" },
-  cohere: { key: "COHERE_API_KEY", models: "Z1_COHERE_MODELS" }
+  cohere: { key: "COHERE_API_KEY", models: "Z1_COHERE_MODELS" },
+  modelscope: { key: "MODELSCOPE_API_KEY", models: "Z1_MODELSCOPE_MODELS" }
 });
 const MODEL_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$/;
 
@@ -104,7 +105,8 @@ export function buildGovernedProviderRequest({ provider, model, content }, env =
     qwen: "https://dashscope-us.aliyuncs.com/compatible-mode/v1/chat/completions",
     kimi: "https://api.moonshot.ai/v1/chat/completions",
     zhipu: "https://api.z.ai/api/paas/v4/chat/completions",
-    mistral: "https://api.mistral.ai/v1/chat/completions"
+    mistral: "https://api.mistral.ai/v1/chat/completions",
+    modelscope: "https://api-inference.modelscope.cn/v1/chat/completions"
   });
   if (provider === "xai" || Object.hasOwn(CHAT_ENDPOINTS, provider)) {
     return {
@@ -150,7 +152,7 @@ function extractModelText(provider, value) {
     return (value?.output || []).flatMap((m) => m.content || [])
       .filter((part) => part.type === "output_text").map((part) => part.text || "").join("\n");
   }
-  if (provider === "xai" || ["deepseek","qwen","kimi","zhipu","mistral"].includes(provider)) {
+  if (provider === "xai" || ["deepseek","qwen","kimi","zhipu","mistral","modelscope"].includes(provider)) {
     const content = value?.choices?.[0]?.message?.content;
     return typeof content === "string" ? content : "";
   }
