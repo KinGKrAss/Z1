@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  buildGovernedProviderRequest, invokeGovernedModel, listGovernedProviders,\n  submitGovernedImageGeneration, getGovernedImageGeneration,
+  buildGovernedProviderRequest, invokeGovernedModel, listGovernedProviders,
+  submitGovernedImageGeneration, getGovernedImageGeneration,
   HUMANITARIAN_SYSTEM_INSTRUCTION
 } from "../core/model_policy_gateway.mjs";
 
