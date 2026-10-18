@@ -10,7 +10,7 @@ It does not expose private finance, property, account, phone, or ChatGPT plugin 
 
 ## Run
 
-Use Node.js 22 or newer. Copy `.env.example` to a private environment file, set `Z1_API_BASE_URL`, and generate a separate random `Z1_MCP_ACCESS_TOKEN` of at least 32 characters. Keep the token out of Git, chat messages, Gemini prompts, and source files.
+Use Node.js 22 or newer. Set `Z1_API_BASE_URL` and a separate random `Z1_MCP_ACCESS_TOKEN` of at least 32 characters in the process environment or hosting secret manager. `.env.example` is a reference only; the server does not load it automatically. Keep the token out of Git, chat messages, Gemini prompts, and source files.
 
 Install and start:
 
