@@ -1,0 +1,80 @@
+name: Deploy Z1 GitHub tools to Cloud Run
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: z1-github-tools-cloud-run
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      GCP_ARTIFACT_REPOSITORY: ${{ vars.GCP_ARTIFACT_REPOSITORY }}
+      CLOUD_RUN_SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+      GCP_RUNTIME_SERVICE_ACCOUNT: ${{ vars.GCP_RUNTIME_SERVICE_ACCOUNT }}
+      GCP_WIF_PROVIDER: ${{ secrets.GCP_WIF_PROVIDER }}
+      GCP_DEPLOYER_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOYER_SERVICE_ACCOUNT }}
+    steps:
+      - name: Check deployment configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in GCP_PROJECT_ID GCP_REGION GCP_ARTIFACT_REPOSITORY CLOUD_RUN_SERVICE GCP_RUNTIME_SERVICE_ACCOUNT GCP_WIF_PROVIDER GCP_DEPLOYER_SERVICE_ACCOUNT; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing GitHub variable or secret: ${name}"
+              exit 1
+            fi
+          done
+
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOYER_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Build, push, and deploy the private service
+        shell: bash
+        run: |
+          set -euo pipefail
+          registry_host="${GCP_REGION}-docker.pkg.dev"
+          image="${registry_host}/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/z1-github-tools:${GITHUB_SHA}"
+          gcloud auth configure-docker "${registry_host}" --quiet
+          docker build --file Dockerfile.z1-github-tools --tag "${image}" .
+          docker push "${image}"
+          gcloud run deploy "${CLOUD_RUN_SERVICE}" \
+            --project "${GCP_PROJECT_ID}" \
+            --region "${GCP_REGION}" \
+            --image "${image}" \
+            --service-account "${GCP_RUNTIME_SERVICE_ACCOUNT}" \
+            --port 8080 \
+            --no-allow-unauthenticated \
+            --set-env-vars "Z1_GITHUB_REPOSITORIES=KinGKrAss/Z1" \
+            --set-secrets "Z1_GITHUB_TOOL_TOKEN=z1-github-tool-token:latest,Z1_GITHUB_TOKEN=z1-github-token:latest" \
+            --max-instances 3 \
+            --memory 512Mi \
+            --cpu 1 \
+            --timeout 30s
+          gcloud run services describe "${CLOUD_RUN_SERVICE}" \
+            --project "${GCP_PROJECT_ID}" \
+            --region "${GCP_REGION}" \
+            --format="value(status.url)"
