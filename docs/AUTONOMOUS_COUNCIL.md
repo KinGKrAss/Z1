@@ -34,10 +34,12 @@ All endpoints require `Authorization: Bearer <Z1_MODEL_GATEWAY_TOKEN>`.
 - `POST /api/z1/agents/memories/:id/feedback` with `{"helpful":true}` or
   `{"helpful":false}`.
 
-Successful task outputs begin as pending memories. Only memories explicitly
-accepted by the owner are included as context in later tasks for that same role.
-This is feedback-based learning; it does not train model weights or create
-independent goals. Every task is bounded by an explicit owner-supplied request.
+Successful task outputs are saved automatically as provisional role memories
+and become context for later tasks of that role. Owner feedback can promote a
+memory to accepted or reject it, which removes it from later context. This lets
+each role learn from its work without waiting for approval after every task.
+It is feedback-based prompt memory; it does not train model weights or create
+independent goals. Each task remains bounded by an explicitly delegated request.
 The runtime does not automatically import ChatGPT conversations or synchronize
 other AI chats. The owner must supply context through a task. Task context and
 results are stored as plaintext JSON with restrictive file permissions; this is
