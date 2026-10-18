@@ -61,7 +61,7 @@ test("reports green only when GitHub checks and workflow runs succeeded", async 
   assert.equal(calls.length, 4);
 });
 
-test("reports unknown rather than green when GitHub has no checks", async () => {
+test("reports unknown when GitHub has no checks", async () => {
   const sha = "b".repeat(40);
   const fetchImpl = async input => {
     const url = new URL(input);
@@ -73,7 +73,7 @@ test("reports unknown rather than green when GitHub has no checks", async () => 
   };
   const result = await route("/api/z1/github/status?repo=KinGKrAss%2FZ1", {fetchImpl});
   assert.equal(result.status, 200);
-  assert.equal(result.body.overall, "pending");
+  assert.equal(result.body.overall, "unknown");
   assert.equal(result.body.checks.workflow_runs, 0);
 });
 
