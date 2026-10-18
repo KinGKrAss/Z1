@@ -44,7 +44,7 @@ test('invalid and duplicate server configuration fails closed', () => {
   assert.throws(() => selectGovernedModel('weapon_control', env([profile('a')]), now), {code: 'routing_action_denied'});
 });
 
-test('selection returns only model identity and a traceable evaluation, never credentials', () => {
+test('routes explicitly allowlisted namespaced ModelScope models', () => {\n  const model = 'Qwen/Qwen3.5-35B-A3B';\n  const configuration = {\n    ...env([]), MODELSCOPE_TOKEN: 'test-only', Z1_MODELSCOPE_MODELS: model,\n    Z1_MODEL_ROUTING_PROFILES: JSON.stringify([profile(model, {provider: 'modelscope'})])\n  };\n  const selected = selectGovernedModel('disaster_response', configuration, now);\n  assert.deepEqual({provider: selected.provider, model: selected.model}, {provider: 'modelscope', model});\n  const bad = {...configuration, Z1_MODEL_ROUTING_PROFILES: JSON.stringify([profile('Qwen/../escape', {provider: 'modelscope'})])};\n  assert.throws(() => selectGovernedModel('disaster_response', bad, now), {code: 'invalid_routing_configuration'});\n});\n\ntest('selection returns only model identity and a traceable evaluation, never credentials', () => {
   const result = select([profile('a')]);
   assert.deepEqual(Object.keys(result).sort(), ['model', 'provider', 'routing']);
   assert.equal(result.routing.evaluationId, 'eval-fixture');
