@@ -92,9 +92,9 @@ export class AutonomousCouncilRuntime {
       repeatEveryMinutes, status:"queued", attempts:0, runCount:0,
       lastRunAt:null, lastError:null, result:null, memoryId:null
     };
+    await this.audit({ event:"z1_agent_task_created", task_id:task.id, owner_id:ownerId, role_id:role.id, task_type:taskType });
     this.state.tasks.push(task);
     await this.persist();
-    await this.audit({ event:"z1_agent_task_created", task_id:task.id, owner_id:ownerId, role_id:role.id, task_type:taskType });
     return this.publicTask(task);
   }
 
@@ -116,11 +116,13 @@ export class AutonomousCouncilRuntime {
     if (typeof helpful !== "boolean") throw new Error("helpful_boolean_required");
     const memory = this.state.memories.find(item => item.id === memoryId && item.ownerId === ownerId);
     if (!memory) throw new Error("memory_not_found");
-    memory.review = helpful ? "accepted" : "rejected";
-    memory.reviewedAt = new Date(this.clock()).toISOString();
+    const review = helpful ? "accepted" : "rejected";
+    const reviewedAt = new Date(this.clock()).toISOString();
+    await this.audit({ event:"z1_agent_memory_reviewed", memory_id:memory.id, owner_id:ownerId, review });
+    memory.review = review;
+    memory.reviewedAt = reviewedAt;
     memory.reviewedBy = ownerId;
     await this.persist();
-    await this.audit({ event:"z1_agent_memory_reviewed", memory_id:memory.id, owner_id:ownerId, review:memory.review });
     return { id:memory.id, review:memory.review, reviewedAt:memory.reviewedAt };
   }
 
@@ -140,6 +142,9 @@ export class AutonomousCouncilRuntime {
   async complete(taskId, result) {
     const task = this.state.tasks.find(item => item.id === taskId);
     if (!task || task.status !== "running") return;
+    if (typeof result !== "string" || !result.trim() || result.length > 12000) {
+      throw new Error("invalid_model_result");
+    }
     task.runCount += 1;
     task.lastError = null;
     const memory = {
@@ -237,6 +242,6 @@ export class AutonomousCouncilRuntime {
     const counts = Object.fromEntries(["queued","running","completed","failed"].map(status =>
       [status, this.state.tasks.filter(task=>task.status===status).length]));
     return { enabled:this.env.Z1_AGENTS_ENABLED === "true", running:this.started, counts,
-      modelConfigured:Boolean(this.env.Z1_MODEL_ROUTING_PROFILES), persistence:this.filePath };
+      modelConfigured:Boolean(this.env.Z1_MODEL_ROUTING_PROFILES), persistentStore:true };
   }
 }
