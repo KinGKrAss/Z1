@@ -28,9 +28,12 @@ function tokenAccepted(req) {
   const a = Buffer.from(expected), b = Buffer.from(actual);
   return a.length === b.length && timingSafeEqual(a,b);
 }
-function fail(res, json, status, code) {
-  json(res,status,{ error:code });
+function respond(res, json, status, body) {
+  json(res,status,body);
   return true;
+}
+function fail(res, json, status, code) {
+  return respond(res,json,status,{ error:code });
 }
 
 export async function startAgentRuntime() {
@@ -47,10 +50,10 @@ export async function handleZ1AgentApi(req, res, url, { readJson, json }) {
 
   if (pathname === "/api/z1/agents/status") {
     if (req.method !== "GET") return fail(res,json,405,"method_not_allowed");
-    return fail(res,json,200,instance.status());
+    return respond(res,json,200,instance.status());
   }
   if (pathname === "/api/z1/agents/tasks") {
-    if (req.method === "GET") return fail(res,json,200,{tasks:instance.listTasks(ownerId())});
+    if (req.method === "GET") return respond(res,json,200,{tasks:instance.listTasks(ownerId())});
     if (req.method !== "POST") return fail(res,json,405,"method_not_allowed");
     try {
       const body = await readJson(req);
@@ -59,7 +62,7 @@ export async function handleZ1AgentApi(req, res, url, { readJson, json }) {
         instructions:body.instructions, context:body.context,
         runAt:body.runAt, repeatEveryMinutes:body.repeatEveryMinutes ?? null
       });
-      return fail(res,json,202,{task, note:"Task is queued. The worker runs when Z1_AGENTS_ENABLED=true and a governed model is configured."});
+      return respond(res,json,202,{task, note:"Task is queued. The worker runs when Z1_AGENTS_ENABLED=true and a governed model is configured."});
     } catch (error) {
       const status = ["task_queue_full","invalid_run_at"].includes(error.message) ? 409 : 400;
       return fail(res,json,status,error.message || "invalid_request");
@@ -67,7 +70,7 @@ export async function handleZ1AgentApi(req, res, url, { readJson, json }) {
   }
   if (pathname === "/api/z1/agents/memories") {
     if (req.method !== "GET") return fail(res,json,405,"method_not_allowed");
-    return fail(res,json,200,{memories:instance.listMemories(ownerId(),url.searchParams.get("roleId") || undefined)});
+    return respond(res,json,200,{memories:instance.listMemories(ownerId(),url.searchParams.get("roleId") || undefined)});
   }
   const feedbackMatch = pathname.match(/^\/api\/z1\/agents\/memories\/([a-f0-9-]+)\/feedback$/i);
   if (feedbackMatch) {
@@ -75,7 +78,7 @@ export async function handleZ1AgentApi(req, res, url, { readJson, json }) {
     try {
       const body = await readJson(req);
       const result = await instance.giveFeedback({ownerId:ownerId(),memoryId:feedbackMatch[1],helpful:body.helpful});
-      return fail(res,json,200,result);
+      return respond(res,json,200,result);
     } catch (error) {
       return fail(res,json,error.message === "memory_not_found" ? 404 : 400,error.message || "invalid_request");
     }
