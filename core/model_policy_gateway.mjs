@@ -21,6 +21,7 @@ const PROVIDERS = Object.freeze({
   modelscope: { key: "MODELSCOPE_API_KEY", models: "Z1_MODELSCOPE_MODELS" }
 });
 const MODEL_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$/;
+const MODELSCOPE_MODEL_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,63}\/[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,63}$/;
 
 export class ModelPolicyError extends Error {
   constructor(code, status = 400) {
@@ -71,7 +72,9 @@ export const HUMANITARIAN_SYSTEM_INSTRUCTION = [
 function ensureConfiguration({ provider, model, content, env }) {
   const spec = Object.hasOwn(PROVIDERS, provider) ? PROVIDERS[provider] : undefined;
   if (!spec) throw new ModelPolicyError("provider_not_supported");
-  if (typeof model !== "string" || !MODEL_PATTERN.test(model)) {
+  const validModel = typeof model === "string" && (MODEL_PATTERN.test(model) ||
+    (provider === "modelscope" && MODELSCOPE_MODEL_PATTERN.test(model)));
+  if (!validModel) {
     throw new ModelPolicyError("invalid_model");
   }
   if (!modelList(env, provider).includes(model)) {
