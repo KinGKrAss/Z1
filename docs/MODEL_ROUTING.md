@@ -31,18 +31,23 @@ Malformed or duplicate configuration fails closed, as does an empty eligible set
 ## ModelScope
 
 ModelScope is available as provider `modelscope` through its OpenAI-compatible
-text-generation inference endpoint. Configure the server secret `MODELSCOPE_TOKEN`
-and the explicit comma-separated model allowlist `Z1_MODELSCOPE_MODELS`, using
-namespaced IDs such as `Qwen/Qwen3.5-35B-A3B`. ModelScope IDs are validated as
+inference endpoint. Configure the server secret `MODELSCOPE_TOKEN` and the
+explicit comma-separated model allowlist `Z1_MODELSCOPE_MODELS`, using namespaced
+IDs such as `Qwen/Qwen3.5-35B-A3B`. ModelScope IDs are validated as
 `namespace/model`; requests go only to the fixed official inference endpoint.
 
+For image understanding, configure `Z1_MODELSCOPE_VISION_MODELS` with model IDs
+that are also in `Z1_MODELSCOPE_MODELS`. The authenticated endpoint
+`POST /api/z1/ai/vision-question` accepts one question and one inline PNG, JPEG,
+or WebP data URL (decoded image limit: 4 MiB). It does not fetch remote URLs.
+The model receives the fixed Z1 policy and a user image as untrusted input; audit
+records a content hash, not the image or question. A supported model card must
+confirm image input before the operator adds its ID to the vision allowlist.
+
 A collection is a catalog grouping, not a single runnable model. Z1 does not
-bulk-download every collection entry or execute repository code. Only models
-that support ModelScope's compatible text-generation API, are explicitly
-allowlisted by the operator, and have a valid routing profile can be selected.
-Vision, speech, embedding, dataset, and local-weight entries need task-specific
-adapters and are not silently treated as chat models. No ModelScope account or
-API token is enabled by default.
+bulk-download every collection entry or execute repository code. Speech, image
+generation/editing, embeddings, datasets, and local-weight entries still require
+their own task adapters. No ModelScope account or API token is enabled by default.
 
 Client-provided profiles, quality scores and confidentiality labels cannot change
 the server configuration. The route controls the action and prompt template.
