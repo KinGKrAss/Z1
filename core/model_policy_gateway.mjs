@@ -349,7 +349,15 @@ export async function getGovernedImageGeneration(
       throw new ModelPolicyError("invalid_upstream_response", 502);
     }
     const images = status === "SUCCEED" && Array.isArray(data.output_images)
-    const images = status === "SUCCEED" && Array.isArray(data.output_images)
+      ? data.output_images.filter(value => {
+          if (typeof value !== "string") return false;
+          try {
+            const imageUrl = new URL(value);
+            return imageUrl.protocol === "https:" && !imageUrl.username && !imageUrl.password;
+          } catch {
+            return false;
+          }
+        }).slice(0, 1)
       : [];
     if (status === "SUCCEED" && images.length === 0) throw new ModelPolicyError("invalid_upstream_response", 502);
     return { provider: "modelscope", model, policy: PEACE_POLICY.id, taskId, status, images };
