@@ -36,9 +36,10 @@ Z1 publishes [Z1-PEACE-001](docs/Z1-PEACE-001.md) and an
 [English / Deutsch / 中文 international invitation](docs/AI_HUMANITARIAN_OPEN_INVITATION_2026.md)
 for voluntary, vendor-neutral humanitarian safety controls.
 
-The Z1 text-only model gateway supports API adapters for eleven providers,
-with server-controlled purpose restrictions, explicit model allowlists,
-audit requirements and separate provider API keys.
+The Z1 model gateway supports governed text inference across eleven providers.
+ModelScope additionally has an authenticated image-question route for explicitly
+allowlisted vision models. Requests use server-side credentials, fixed provider
+origins, purpose restrictions and redacted audit records.
 This is **not** a change to third-party providers' global models.
 The gateway is disabled until configured by an authorized operator,
 and mocked tests are not proof of a live deployment.
