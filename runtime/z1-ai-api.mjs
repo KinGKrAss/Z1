@@ -88,7 +88,7 @@ export async function handleZ1AiApi(req, res, url, { readJson, json }) {
       const description = body.description;
       if (typeof body.model !== "string" || !modelAllowlist.includes(body.model) ||
           typeof description !== "string" || description.trim().length < 3 ||
-          description.length > 700 || /[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/u.test(description)) {
+          description.length > 700 || /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/u.test(description)) {
         throw new ModelPolicyError("invalid_hologram_parameters");
       }
       const prompt = "Create one original, friendly digital AI being as a luminous hologram for a humanitarian education interface. " +
