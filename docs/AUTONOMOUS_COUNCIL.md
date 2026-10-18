@@ -38,6 +38,12 @@ Successful task outputs begin as pending memories. Only memories explicitly
 accepted by the owner are included as context in later tasks for that same role.
 This is feedback-based learning; it does not train model weights or create
 independent goals. Every task is bounded by an explicit owner-supplied request.
+The runtime does not automatically import ChatGPT conversations or synchronize
+other AI chats. The owner must supply context through a task. Task context and
+results are stored as plaintext JSON with restrictive file permissions; this is
+not encryption at rest. Do not include credentials, and protect the data volume
+and its backups. Task content is sent to the configured model provider under
+that provider's terms.
 
 ## Persistence boundary
 
