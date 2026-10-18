@@ -28,6 +28,22 @@ underlying benchmark. Use a consistent task-specific evaluation set. Do not inve
 performance values to activate routing. No routing profiles are enabled by default.
 Malformed or duplicate configuration fails closed, as does an empty eligible set.
 
+## ModelScope
+
+ModelScope is available as provider `modelscope` through its OpenAI-compatible
+text-generation inference endpoint. Configure the server secret `MODELSCOPE_TOKEN`
+and the explicit comma-separated model allowlist `Z1_MODELSCOPE_MODELS`, using
+namespaced IDs such as `Qwen/Qwen3.5-35B-A3B`. ModelScope IDs are validated as
+`namespace/model`; requests go only to the fixed official inference endpoint.
+
+A collection is a catalog grouping, not a single runnable model. Z1 does not
+bulk-download every collection entry or execute repository code. Only models
+that support ModelScope's compatible text-generation API, are explicitly
+allowlisted by the operator, and have a valid routing profile can be selected.
+Vision, speech, embedding, dataset, and local-weight entries need task-specific
+adapters and are not silently treated as chat models. No ModelScope account or
+API token is enabled by default.
+
 Client-provided profiles, quality scores and confidentiality labels cannot change
 the server configuration. The route controls the action and prompt template.
 A supplied model with `provider: "auto"` is rejected. The router returns the selected
@@ -58,4 +74,5 @@ used for testing. No live model request was made as part of these tests.
 
 Run `node --test tests/model-router.test.mjs tests/model_policy_gateway.test.mjs tests/z1-ai-api.test.mjs tests/humanitarian_policy.test.mjs`.
 Tests cover stable ranking, missing/expired approvals, invalid configuration,
-authenticated routing, redacted audit, audit failure, and no automatic fallback.
+authenticated routing, redacted audit, audit failure, no automatic fallback,
+and ModelScope namespaced model allowlisting and response normalization.
