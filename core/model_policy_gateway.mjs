@@ -21,7 +21,7 @@ const PROVIDERS = Object.freeze({
   modelscope: { key: "MODELSCOPE_TOKEN", models: "Z1_MODELSCOPE_MODELS" }
 });
 const MODEL_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$/;
-const MODELSCOPE_MODEL_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}\\/[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/;
+const MODELSCOPE_MODEL_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}\/[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/;
 function validModelId(provider, model) {
   return typeof model === "string" && (provider === "modelscope"
     ? MODELSCOPE_MODEL_PATTERN.test(model) : MODEL_PATTERN.test(model));
