@@ -36,7 +36,7 @@ Z1 publishes [Z1-PEACE-001](docs/Z1-PEACE-001.md) and an
 [English / Deutsch / 中文 international invitation](docs/AI_HUMANITARIAN_OPEN_INVITATION_2026.md)
 for voluntary, vendor-neutral humanitarian safety controls.
 
-The Z1 text-only model gateway supports API adapters for ten providers,
+The Z1 text-only model gateway supports API adapters for eleven providers,
 with server-controlled purpose restrictions, explicit model allowlists,
 audit requirements and separate provider API keys.
 This is **not** a change to third-party providers' global models.
