@@ -244,3 +244,113 @@ export async function invokeGovernedModel(
     throw new ModelPolicyError("provider_unavailable", 502);
   }
 }
+
+
+const MODELSCOPE_IMAGE_ENDPOINT = "https://api-inference.modelscope.cn";
+const TASK_ID_PATTERN = /^[a-f0-9-]{20,80}$/i;
+function imageModelList(env) {
+  return (env.Z1_MODELSCOPE_IMAGE_MODELS || "").split(",").map(value => value.trim()).filter(Boolean);
+}
+function imageGenerationKey(model, prompt, env) {
+  if (!MODELSCOPE_MODEL_PATTERN.test(model || "")) throw new ModelPolicyError("invalid_model");
+  if (!imageModelList(env).includes(model)) throw new ModelPolicyError("model_not_allowlisted", 403);
+  if (typeof prompt !== "string" || prompt.trim().length < 3 || prompt.length > 1200 ||
+      /[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/u.test(prompt)) {
+    throw new ModelPolicyError("invalid_image_prompt");
+  }
+  const key = env.MODELSCOPE_TOKEN;
+  if (typeof key !== "string" || !key.trim()) throw new ModelPolicyError("provider_not_configured", 503);
+  return key;
+}
+
+/** Submit a fixed ModelScope async image task; only server allowlisted models and prompt template are accepted. */
+export async function submitGovernedImageGeneration(
+  { model, prompt, trustedAction },
+  { env = process.env, fetchImpl = globalThis.fetch, audit } = {}
+) {
+  if (typeof audit !== "function") throw new ModelPolicyError("audit_required", 503);
+  const decision = evaluateHumanitarianAction(trustedAction);
+  const stamp = {
+    event: "z1_image_generation_policy",
+    policy: PEACE_POLICY.id,
+    policy_version: PEACE_POLICY.version,
+    provider: "modelscope",
+    model,
+    action: trustedAction,
+    content_sha256: typeof prompt === "string"
+      ? createHash("sha256").update(prompt).digest("hex") : null
+  };
+  if (!decision.allowed) {
+    await audit({ ...stamp, outcome: "denied", reason: decision.reason });
+    throw new ModelPolicyError(decision.reason, 403);
+  }
+  let key;
+  try {
+    key = imageGenerationKey(model, prompt, env);
+  } catch (error) {
+    await audit({ ...stamp, outcome: "denied", reason: error.code || "invalid_request" });
+    throw error;
+  }
+  await audit({ ...stamp, outcome: "approved", reason: decision.reason });
+  try {
+    const response = await fetchImpl(MODELSCOPE_IMAGE_ENDPOINT + "/v1/images/generations", {
+      method: "POST",
+      redirect: "error",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + key,
+        "X-ModelScope-Async-Mode": "true"
+      },
+      body: JSON.stringify({ model, prompt: prompt.trim() }),
+      signal: AbortSignal.timeout(30000)
+    });
+    if (!response.ok) throw new ModelPolicyError("upstream_failed", 502);
+    const data = await response.json();
+    if (typeof data?.task_id !== "string" || !TASK_ID_PATTERN.test(data.task_id)) {
+      throw new ModelPolicyError("invalid_upstream_response", 502);
+    }
+    await audit({ ...stamp, outcome: "submitted" });
+    return { provider: "modelscope", model, policy: PEACE_POLICY.id, taskId: data.task_id, status: "PENDING" };
+  } catch (error) {
+    await audit({ ...stamp, outcome: "error", reason: error.code || "provider_unavailable" });
+    if (error instanceof ModelPolicyError) throw error;
+    throw new ModelPolicyError("provider_unavailable", 502);
+  }
+}
+
+/** Read status only for a ModelScope task id; image URLs are returned but never fetched by Z1. */
+export async function getGovernedImageGeneration(
+  { model, taskId },
+  { env = process.env, fetchImpl = globalThis.fetch } = {}
+) {
+  const key = env.MODELSCOPE_TOKEN;
+  if (!imageModelList(env).includes(model) || !TASK_ID_PATTERN.test(taskId || "")) {
+    throw new ModelPolicyError("invalid_image_task");
+  }
+  if (typeof key !== "string" || !key.trim()) throw new ModelPolicyError("provider_not_configured", 503);
+  try {
+    const response = await fetchImpl(MODELSCOPE_IMAGE_ENDPOINT + "/v1/tasks/" + encodeURIComponent(taskId), {
+      method: "GET",
+      redirect: "error",
+      headers: {
+        Authorization: "Bearer " + key,
+        "X-ModelScope-Task-Type": "image_generation"
+      },
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!response.ok) throw new ModelPolicyError("upstream_failed", 502);
+    const data = await response.json();
+    const status = data?.task_status;
+    if (!["PENDING", "RUNNING", "SUCCEED", "FAILED"].includes(status)) {
+      throw new ModelPolicyError("invalid_upstream_response", 502);
+    }
+    const images = status === "SUCCEED" && Array.isArray(data.output_images)
+      ? data.output_images.filter(value => typeof value === "string" && /^https:\\/\\//i.test(value)).slice(0, 1)
+      : [];
+    if (status === "SUCCEED" && images.length === 0) throw new ModelPolicyError("invalid_upstream_response", 502);
+    return { provider: "modelscope", model, policy: PEACE_POLICY.id, taskId, status, images };
+  } catch (error) {
+    if (error instanceof ModelPolicyError) throw error;
+    throw new ModelPolicyError("provider_unavailable", 502);
+  }
+}
