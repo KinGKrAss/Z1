@@ -83,10 +83,16 @@ test("does not return sensitive text from a malformed upstream JSON response", a
   const token = "d".repeat(40);
   const previousFetch = globalThis.fetch;
   const previousBaseUrl = process.env.Z1_API_BASE_URL;
-  globalThis.fetch = async () => new Response("SECRET-UPSTREAM-BODY", {
-    status: 200,
-    headers: { "content-type": "application/json" }
-  });
+  globalThis.fetch = async (input, init) => {
+    const target = new URL(input);
+    if (target.hostname === "localhost") {
+      return new Response("SECRET-UPSTREAM-BODY", {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    return previousFetch(input, init);
+  };
   process.env.Z1_API_BASE_URL = "http://localhost:3001";
   const { server, url } = await start(token);
   try {
