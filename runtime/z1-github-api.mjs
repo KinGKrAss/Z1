@@ -67,7 +67,7 @@ function publicError(error) {
 
 function aggregateState(status, runs) {
   const statusContexts = Array.isArray(status?.statuses) ? status.statuses : [];
-  const statePresent = statusContexts.length > 0 || ["success", "failure", "pending", "error"].includes(status?.state);
+  const statePresent = statusContexts.length > 0 || (status?.total_count ?? 0) > 0;
   const statusFailed = status?.state === "failure" || status?.state === "error"
     || statusContexts.some(item => item.state !== "success");
   const statusPending = status?.state === "pending" || statusContexts.some(item => item.state === "pending");
@@ -95,28 +95,28 @@ function runSummary(run) {
   };
 }
 
-async function requireGitHubConfig(req, url, env, json, fetchImpl) {
+async function requireGitHubConfig(req, res, url, env, json, fetchImpl) {
   const toolToken = env.Z1_GITHUB_TOOL_TOKEN;
   if (!toolToken) {
-    json(null, 503, { error: "github_tools_not_configured", message: "Configure the private Z1_GITHUB_TOOL_TOKEN secret." });
+    json(res, 503, { error: "github_tools_not_configured", message: "Configure the private Z1_GITHUB_TOOL_TOKEN secret." });
     return null;
   }
   if (!bearerMatches(req.headers?.authorization, toolToken)) {
-    json(null, 401, { error: "unauthorized" });
+    json(res, 401, { error: "unauthorized" });
     return null;
   }
   const githubToken = env.Z1_GITHUB_TOKEN;
   if (!githubToken) {
-    json(null, 503, { error: "github_token_not_configured", message: "Configure a read-only GitHub token in the server secret store." });
+    json(res, 503, { error: "github_token_not_configured", message: "Configure a read-only GitHub token in the server secret store." });
     return null;
   }
   const repo = url.searchParams.get("repo") || "";
   if (!validRepository(repo)) {
-    json(null, 400, { error: "invalid_repository", message: "Provide repo as owner/name." });
+    json(res, 400, { error: "invalid_repository", message: "Provide repo as owner/name." });
     return null;
   }
   if (!allowedRepositories(env.Z1_GITHUB_REPOSITORIES).has(repo)) {
-    json(null, 403, { error: "repository_not_allowed" });
+    json(res, 403, { error: "repository_not_allowed" });
     return null;
   }
   return { repo, githubToken, fetchImpl };
@@ -132,7 +132,7 @@ export async function handleZ1GitHubApi(req, res, url, {
     json(res, 405, { error: "method_not_allowed", allow: "GET" });
     return true;
   }
-  const config = await requireGitHubConfig(req, url, env, json, fetchImpl);
+  const config = await requireGitHubConfig(req, res, url, env, json, fetchImpl);
   if (!config) return true;
   const { repo, githubToken } = config;
   const repoPath = `/repos/${repo}`;
