@@ -138,6 +138,7 @@ export async function handleZ1GitHubApi(req, res, url, {
 } = {}) {
   if (![STATUS_PATH, RUNS_PATH].includes(url.pathname)) return false;
   if (req.method !== "GET") {
+    res.setHeader?.("allow", "GET");
     json(res, 405, { error: "method_not_allowed", allow: "GET" });
     return true;
   }

@@ -20,7 +20,8 @@
     "test:speak": "node --test tests/speak.test.mjs tests/speak-api.test.mjs",
     "test:speak-ui": "node --test tests/speak-ui.test.mjs",
     "test:gobtcpay": "node --test tests/gobtcpay.test.mjs",
-    "test:github-api": "node --test tests/z1-github-api.test.mjs"
+    "test:github-api": "node --test tests/z1-github-api.test.mjs",
+    "test:github-api-server": "node --test tests/z1-github-api-server.test.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
