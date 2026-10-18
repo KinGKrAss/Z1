@@ -2,7 +2,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { mkdir, appendFile } from "node:fs/promises";
 import path from "node:path";
-import { invokeGovernedModel, listGovernedProviders, ModelPolicyError } from "../core/model_policy_gateway.mjs";
+import { invokeGovernedModel, listGovernedProviders, ModelPolicyError, submitGovernedImageGeneration, getGovernedImageGeneration } from "../core/model_policy_gateway.mjs";
 
 import { selectGovernedModel } from "../core/model_router.mjs";
 
@@ -49,8 +49,10 @@ async function auditModelPolicy(event) {
 export async function handleZ1AiApi(req, res, url, { readJson, json }) {
   const isProviderList = url.pathname === "/api/z1/ai/providers";
   const isVisionQuestion = url.pathname === "/api/z1/ai/vision-question";
+  const isHologram = url.pathname === "/api/z1/ai/hologram";
+  const hologramTaskMatch = /^\\/api\\/z1\\/ai\\/hologram\\/([a-f0-9-]{20,80})$/i.exec(url.pathname);
   const workflow = WORKFLOWS[url.pathname];
-  if (!isProviderList && !workflow && !isVisionQuestion) return false;
+  if (!isProviderList && !workflow && !isVisionQuestion && !isHologram && !hologramTaskMatch) return false;
   if (!process.env.Z1_MODEL_GATEWAY_TOKEN) {
     json(res, 503, { error: "gateway_not_configured" }); return true;
   }
