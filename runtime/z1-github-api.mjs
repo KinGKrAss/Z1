@@ -69,8 +69,9 @@ function aggregateState(status, runs) {
   const statusContexts = Array.isArray(status?.statuses) ? status.statuses : [];
   const statePresent = statusContexts.length > 0 || (status?.total_count ?? 0) > 0;
   const statusFailed = status?.state === "failure" || status?.state === "error"
-    || statusContexts.some(item => item.state !== "success");
-  const statusPending = status?.state === "pending" || statusContexts.some(item => item.state === "pending");
+    || statusContexts.some(item => item.state === "failure" || item.state === "error");
+  const statusPending = ((status?.total_count ?? statusContexts.length) > 0 && status?.state === "pending")
+    || statusContexts.some(item => item.state === "pending");
   const runList = Array.isArray(runs?.workflow_runs) ? runs.workflow_runs : [];
   const runFailed = runList.some(run => run.status === "completed" && run.conclusion !== "success");
   const runPending = runList.some(run => run.status !== "completed");
