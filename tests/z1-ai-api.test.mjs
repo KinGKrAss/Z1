@@ -168,7 +168,7 @@ test("authenticated vision route sends only a configured inline image to ModelSc
     assert.equal(result.status, 200);
     assert.equal(result.body.text, "Im Bild ist ein Gegenstand zu sehen.");
     assert.equal(calls, 1);
-    const audit = (await readFile(keys.Z1_MODEL_AUDIT_PATH, "utf8")).trim().split("\\n").map(JSON.parse);
+    const audit = (await readFile(keys.Z1_MODEL_AUDIT_PATH, "utf8")).trim().split("\n").map(JSON.parse);
     assert.deepEqual(audit.map(event => event.outcome), ["approved", "completed"]);
     const serialized = JSON.stringify(audit);
     assert.ok(!serialized.includes("aGVsbG8="));
