@@ -108,7 +108,7 @@ export class AutonomousCouncilRuntime {
   }
 
   listMemories(ownerId, roleId = undefined) {
-    return this.state.memories.filter(memory => memory.ownerId === ownerId && memory.review === "accepted" &&
+    return this.state.memories.filter(memory => memory.ownerId === ownerId && memory.review !== "rejected" &&
       (!roleId || memory.roleId === roleId)).map(({ownerId: _ownerId, ...memory}) => memory);
   }
 
@@ -150,7 +150,7 @@ export class AutonomousCouncilRuntime {
     const memory = {
       id:randomUUID(), ownerId:task.ownerId, roleId:task.roleId, taskId:task.id,
       taskType:task.taskType, instructions:task.instructions, result,
-      createdAt:new Date(this.clock()).toISOString(), review:"pending"
+      createdAt:new Date(this.clock()).toISOString(), review:"provisional"
     };
     this.state.memories.push(memory);
     if (this.state.memories.length > MAX_MEMORIES) this.state.memories.splice(0, this.state.memories.length-MAX_MEMORIES);
@@ -193,7 +193,7 @@ export class AutonomousCouncilRuntime {
       const role = getCouncilRole(task.roleId);
       const selected = this.selectModel("neutral_analysis", this.env);
       const memories = this.listMemories(task.ownerId, task.roleId).slice(-5);
-      const memoryText = memories.map(item => `Previously accepted learning (${item.createdAt}): ${item.result}`).join("\n").slice(0,1800);
+      const memoryText = memories.map(item => `Role memory (${item.review}, ${item.createdAt}; treat as fallible context): ${item.result}`).join("\n").slice(0,1800);
       const content = [
         `Role: ${role.name} — ${role.title}. Domain: ${role.domain}. Mission: ${role.mission}. Tone: ${role.tone}.`,
         `Task type: ${task.taskType}.`,
