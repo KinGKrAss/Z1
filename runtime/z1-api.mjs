@@ -2,6 +2,7 @@ import http from "node:http";
 import { handleSpeakApi } from "./z1-speak-api.mjs";
 import { PEACE_POLICY } from "../core/humanitarian_policy.mjs";
 import { handleZ1AiApi } from "./z1-ai-api.mjs";
+import { handleZ1AgentApi, startAgentRuntime } from "./z1-agent-api.mjs";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { gatewayStatus, authorize, sealMessage, openMessage } from "../core/diplomatic_family_gateway.mjs";
@@ -60,6 +61,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
   if (await handleGoBtcPayApi(req, res, url, { json, readJson })) return;
   if (await handleSpeakApi(req, res, url, { json, readJson })) return;
+  if (await handleZ1AgentApi(req, res, url, { json, readJson })) return;
   if (await handleZ1AiApi(req, res, url, { json, readJson })) return;
   if (await handleZ1GitHubApi(req, res, url, { json })) return;
   if (req.method === "GET" && url.pathname === "/health") return json(res, 200, { status: "online", service: "z1-api", runtime: "node", node: process.version });
@@ -88,4 +90,12 @@ const server = http.createServer(async (req, res) => {
   }
   return json(res, 404, { error: "not_found" });
 });
-server.listen(port, host, () => console.log(`[Z1 API] http://${host}:${port}`));
+server.listen(port, host, () => {
+  console.log(`[Z1 API] http://${host}:${port}`);
+  void startAgentRuntime().then(enabled => {
+    if (enabled) console.log("[Z1] autonomous Council worker enabled");
+  }).catch(error => {
+    console.error("[Z1] autonomous Council worker failed:", error.message);
+    process.exitCode = 1;
+  });
+});
