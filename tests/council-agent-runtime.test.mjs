@@ -48,7 +48,7 @@ test("queued tasks persist, run autonomously, and learn only from accepted feedb
   });
   restarted.started = true;
   assert.equal(await restarted.runOne(), true);
-  assert.match(prompts[1], /Role memory \\(accepted/);
+  assert.ok(prompts[1].includes("Role memory (accepted"));
   assert.match(prompts[1], /Verified summary one/);
   assert.equal(restarted.listTasks("owner-a").length, 2);
 });
