@@ -43,7 +43,9 @@ async function githubJson(path, token, fetchImpl) {
   });
   if (!response.ok) {
     const remaining = response.headers?.get?.("x-ratelimit-remaining");
-    const kind = response.status === 403 && remaining === "0" ? "rate_limit"
+    const retryAfter = response.headers?.get?.("retry-after");
+    const kind = response.status === 429 || (response.status === 403 && (remaining === "0" || retryAfter))
+      ? "rate_limit"
       : response.status === 403 ? "forbidden"
       : response.status === 401 ? "unauthorized"
       : response.status === 404 ? "not_found"
@@ -65,7 +67,7 @@ function publicError(error) {
   return { error: code, message: messages[code] };
 }
 
-function aggregateState(status, runs) {
+function aggregateState(status, runs, {runsTruncated = false} = {}) {
   const statusContexts = Array.isArray(status?.statuses) ? status.statuses : [];
   const statePresent = statusContexts.length > 0 || (status?.total_count ?? 0) > 0;
   const statusFailed = status?.state === "failure" || status?.state === "error"
@@ -73,11 +75,12 @@ function aggregateState(status, runs) {
   const statusPending = ((status?.total_count ?? statusContexts.length) > 0 && status?.state === "pending")
     || statusContexts.some(item => item.state === "pending");
   const runList = Array.isArray(runs?.workflow_runs) ? runs.workflow_runs : [];
-  const runFailed = runList.some(run => run.status === "completed" && run.conclusion !== "success");
+  const runFailed = runList.some(run => run.status === "completed"
+    && !["success", "neutral", "skipped"].includes(run.conclusion));
   const runPending = runList.some(run => run.status !== "completed");
   if (statusFailed || runFailed) return "red";
   if (statusPending || runPending) return "pending";
-  if (!statePresent && runList.length === 0) return "unknown";
+  if (runsTruncated || (!statePresent && runList.length === 0)) return "unknown";
   return "green";
 }
 
@@ -116,7 +119,12 @@ async function requireGitHubConfig(req, res, url, env, json, fetchImpl) {
     json(res, 400, { error: "invalid_repository", message: "Provide repo as owner/name." });
     return null;
   }
-  if (!allowedRepositories(env.Z1_GITHUB_REPOSITORIES).has(repo)) {
+  const allowlist = allowedRepositories(env.Z1_GITHUB_REPOSITORIES);
+  if (allowlist.size === 0) {
+    json(res, 503, { error: "github_repository_allowlist_not_configured", message: "Configure at least one repository in Z1_GITHUB_REPOSITORIES." });
+    return null;
+  }
+  if (!allowlist.has(repo)) {
     json(res, 403, { error: "repository_not_allowed" });
     return null;
   }
@@ -160,13 +168,16 @@ export async function handleZ1GitHubApi(req, res, url, {
         githubJson(`${repoPath}/commits/${commit.sha}/status`, githubToken, fetchImpl),
         githubJson(`${repoPath}/actions/runs?head_sha=${commit.sha}&per_page=20`, githubToken, fetchImpl)
       ]);
-      const runs = (actions.workflow_runs || []).map(runSummary);
+      const actionRuns = Array.isArray(actions.workflow_runs) ? actions.workflow_runs : [];
+      const runs = actionRuns.map(runSummary);
+      const totalRuns = Number.isInteger(actions.total_count) ? actions.total_count : runs.length;
+      const runsTruncated = totalRuns > runs.length;
       json(res, 200, {
         repository: repo,
         branch,
         commit: { sha: commit.sha, message: (commit.commit?.message || "").split("\n")[0], html_url: commit.html_url },
-        overall: aggregateState(combined, actions),
-        checks: { state: combined.state || "none", total: combined.total_count ?? 0, workflow_runs: runs.length },
+        overall: aggregateState(combined, actions, {runsTruncated}),
+        checks: { state: combined.state || "none", total: combined.total_count ?? 0, workflow_runs: runs.length, total_workflow_runs: totalRuns, workflow_runs_truncated: runsTruncated },
         workflow_runs: runs,
         checked_at: new Date().toISOString()
       });
