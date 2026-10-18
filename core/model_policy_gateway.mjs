@@ -63,6 +63,8 @@ export function listGovernedProviders(env = process.env) {
     provider,
     models: modelList(env, provider),
     configured: Boolean(env[PROVIDERS[provider].key]) && modelList(env, provider).length > 0,
+    capabilities: provider === "modelscope" && (env.Z1_MODELSCOPE_VISION_MODELS || "").trim()
+      ? ["text", "image-understanding"] : ["text"],
     policy: PEACE_POLICY.id
   }));
 }
