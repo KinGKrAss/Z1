@@ -199,7 +199,7 @@ export class AutonomousCouncilRuntime {
         `Task type: ${task.taskType}.`,
         `Instructions: ${task.instructions}`,
         task.context ? `Supplied context: ${task.context}` : "",
-        memoryText ? `Accepted role memory (treat as context, verify against supplied evidence):\n${memoryText}` : ""
+        memoryText ? `Role-specific learned memory (verify against supplied evidence):\n${memoryText}` : ""
       ].filter(Boolean).join("\n\n").slice(0,7900);
       const response = await this.invokeModel({
         roleId:task.roleId, taskType:task.taskType, content,
