@@ -18,7 +18,7 @@ function constantTimeTokenMatch(actualHeader, expected) {
 
 function checkedBaseUrl(raw) {
   const base = new URL(raw);
-  const local = ["localhost", "127.0.0.1", "::1"].includes(base.hostname);
+  const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(base.hostname);
   if (base.protocol !== "https:" && !local) {
     throw new Error("Z1_API_BASE_URL must use HTTPS unless it points to loopback.");
   }
@@ -37,9 +37,9 @@ async function fetchZ1Json(pathname) {
     redirect: "error",
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
   });
-  if (!response.ok) throw new Error(`Z1 returned HTTP ${response.status}.`);
+  if (!response.ok) throw new Error("upstream_error");
   const type = response.headers.get("content-type") || "";
-  if (!type.includes("application/json")) throw new Error("Z1 returned a non-JSON response.");
+  if (!type.includes("application/json")) throw new Error("upstream_error");
   return response.json();
 }
 
@@ -48,7 +48,7 @@ function createMcpServer() {
   const emptyInput = z.object({}).strict();
 
   for (const [name, description, route] of [
-    ["z1_status", "Read the current Z1 runtime status. No personal records are returned.", "/api/z1/status"],
+    ["z1_status", "Check whether the Z1 API is online. This is a passive health check.", "/health"],
     ["z1_modules", "List the modules exposed by the Z1 runtime.", "/api/z1/modules"],
     ["z1_policy", "Read the public Z1 peace and humanitarian policy.", "/api/z1/peace-policy"]
   ]) {
@@ -56,10 +56,10 @@ function createMcpServer() {
       try {
         const data = await fetchZ1Json(route);
         return { content: [{ type: "text", text: JSON.stringify(data) }] };
-      } catch (error) {
+      } catch {
         return {
           isError: true,
-          content: [{ type: "text", text: `Z1 read failed: ${error.message}` }]
+          content: [{ type: "text", text: "Z1 read failed. Check the private server logs." }]
         };
       }
     });
