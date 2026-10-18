@@ -27,7 +27,8 @@ const env = {
   Z1_ZHIPU_MODELS: "glm-example",
   Z1_MISTRAL_MODELS: "mistral-example",
   Z1_COHERE_MODELS: "cohere-example",
-  Z1_MODELSCOPE_MODELS: "Qwen/Qwen3.5-35B-A3B"
+  Z1_MODELSCOPE_MODELS: "Qwen/Qwen3.5-35B-A3B",
+  Z1_MODELSCOPE_VISION_MODELS: "Qwen/Qwen3.5-35B-A3B"
 };
 const samples = [
   ["openai", "gpt-example-a", "https://api.openai.com/v1/responses"],
@@ -47,6 +48,8 @@ test("provider list contains no secret values", () => {
   const providers = listGovernedProviders(env);
   assert.equal(providers.length, 11);
   assert.ok(providers.every((item) => item.configured && item.policy === "Z1-PEACE-001"));
+  assert.deepEqual(providers.find(item => item.provider === "modelscope").capabilities,
+    ["text", "image-understanding"]);
   assert.ok(!JSON.stringify(providers).includes("secret"));
 });
 
@@ -180,4 +183,28 @@ test("unconfigured and unknown model IDs remain blocked for new providers", () =
     assert.throws(() => buildGovernedProviderRequest({provider,model,content:"help"}, withoutKeys),
       (err) => err.code === "provider_not_configured");
   }
+});
+
+
+test("ModelScope image adapter accepts bounded inline images only", () => {
+  const content = [
+    {type: "text", text: "Describe the image safely."},
+    {type: "image_url", image_url: {url: "data:image/png;base64,aGVsbG8="}}
+  ];
+  const request = buildGovernedProviderRequest({
+    provider: "modelscope", model: "Qwen/Qwen3.5-35B-A3B", content
+  }, env);
+  assert.equal(request.url, "https://api-inference.modelscope.cn/v1/chat/completions");
+  assert.deepEqual(request.body.messages[1].content, content);
+  assert.ok(!JSON.stringify(request.headers).includes("test-modelscope-secret"));
+  for (const invalid of [
+    [{type:"text",text:"Question"}, {type:"image_url",image_url:{url:"https://example.com/image.png"}}],
+    [{type:"text",text:"Question"}, {type:"image_url",image_url:{url:"data:image/svg+xml;base64,aGVsbG8="}}],
+    [{type:"text",text:"Question"}, {type:"image_url",image_url:{url:"data:image/png;base64,aGVsbG8=\n"}}]
+  ]) assert.throws(() => buildGovernedProviderRequest({
+    provider:"modelscope", model:"Qwen/Qwen3.5-35B-A3B", content:invalid
+  }, env), {code:"invalid_content"});
+  assert.throws(() => buildGovernedProviderRequest({
+    provider:"openai", model:"gpt-example-a", content
+  }, env), {code:"invalid_content"});
 });
