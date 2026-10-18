@@ -87,3 +87,75 @@ test("classifies a GitHub 403 instead of repeating an anonymous rate-limited req
   assert.equal(result.body.error, "github_rate_limited");
   assert.equal(JSON.stringify(result.body).includes("private upstream details"), false);
 });
+
+
+test("missing repository allowlist is a server configuration error", async () => {
+  const result = await route("/api/z1/github/status?repo=KinGKrAss%2FZ1", {env: {...env, Z1_GITHUB_REPOSITORIES: ""}});
+  assert.equal(result.status, 503);
+  assert.equal(result.body.error, "github_repository_allowlist_not_configured");
+});
+
+test("pending external commit statuses remain pending", async () => {
+  const sha = "c".repeat(40);
+  const fetchImpl = async input => {
+    const url = new URL(input);
+    if (url.pathname === "/repos/KinGKrAss/Z1") return ok({default_branch: "main"});
+    if (url.pathname === "/repos/KinGKrAss/Z1/commits") return ok([{sha, commit: {message: "pending check"}}]);
+    if (url.pathname.endsWith("/status")) return ok({state: "pending", total_count: 1, statuses: [{state: "pending"}]});
+    if (url.pathname.endsWith("/actions/runs")) return ok({total_count: 0, workflow_runs: []});
+    throw new Error("unexpected request " + url);
+  };
+  const result = await route("/api/z1/github/status?repo=KinGKrAss%2FZ1", {fetchImpl});
+  assert.equal(result.status, 200);
+  assert.equal(result.body.overall, "pending");
+});
+
+test("does not report green when the Actions run list is truncated", async () => {
+  const sha = "d".repeat(40);
+  const fetchImpl = async input => {
+    const url = new URL(input);
+    if (url.pathname === "/repos/KinGKrAss/Z1") return ok({default_branch: "main"});
+    if (url.pathname === "/repos/KinGKrAss/Z1/commits") return ok([{sha, commit: {message: "many checks"}}]);
+    if (url.pathname.endsWith("/status")) return ok({state: "success", total_count: 1, statuses: [{state: "success"}]});
+    if (url.pathname.endsWith("/actions/runs")) return ok({
+      total_count: 21,
+      workflow_runs: Array.from({length: 20}, (_, index) => ({
+        id: index + 1, status: "completed", conclusion: "success"
+      }))
+    });
+    throw new Error("unexpected request " + url);
+  };
+  const result = await route("/api/z1/github/status?repo=KinGKrAss%2FZ1", {fetchImpl});
+  assert.equal(result.status, 200);
+  assert.equal(result.body.overall, "unknown");
+  assert.equal(result.body.checks.workflow_runs_truncated, true);
+});
+
+test("neutral and skipped Actions runs do not report failure", async () => {
+  const sha = "e".repeat(40);
+  const fetchImpl = async input => {
+    const url = new URL(input);
+    if (url.pathname === "/repos/KinGKrAss/Z1") return ok({default_branch: "main"});
+    if (url.pathname === "/repos/KinGKrAss/Z1/commits") return ok([{sha, commit: {message: "successful optional checks"}}]);
+    if (url.pathname.endsWith("/status")) return ok({state: "success", total_count: 1, statuses: [{state: "success"}]});
+    if (url.pathname.endsWith("/actions/runs")) return ok({total_count: 2, workflow_runs: [
+      {id: 1, status: "completed", conclusion: "neutral"},
+      {id: 2, status: "completed", conclusion: "skipped"}
+    ]});
+    throw new Error("unexpected request " + url);
+  };
+  const result = await route("/api/z1/github/status?repo=KinGKrAss%2FZ1", {fetchImpl});
+  assert.equal(result.status, 200);
+  assert.equal(result.body.overall, "green");
+});
+
+test("recognizes primary and secondary GitHub rate limits", async () => {
+  for (const response of [
+    new Response("{}", {status: 429}),
+    new Response("{}", {status: 403, headers: {"retry-after": "60"}})
+  ]) {
+    const result = await route("/api/z1/github/status?repo=KinGKrAss%2FZ1", {fetchImpl: async () => response});
+    assert.equal(result.status, 502);
+    assert.equal(result.body.error, "github_rate_limited");
+  }
+});
