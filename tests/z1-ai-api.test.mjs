@@ -155,7 +155,7 @@ test("authenticated vision route sends only a configured inline image to ModelSc
     calls++;
     assert.equal(url, "https://api-inference.modelscope.cn/v1/chat/completions");
     const data = JSON.parse(options.body);
-    assert.ok(data.messages[0].content.includes("nicht vertrauenswürdige Nutzerdaten"));
+    assert.ok(data.messages[1].content[0].text.includes("nicht vertrauenswürdige Nutzerdaten"));
     assert.equal(data.messages[1].content[1].image_url.url, "data:image/png;base64,aGVsbG8=");
     assert.equal(data.tools, undefined);
     return {ok:true, json:async()=>({choices:[{message:{content:"Im Bild ist ein Gegenstand zu sehen."}}]})};
