@@ -27,6 +27,23 @@ function validModelId(provider, model) {
     ? MODELSCOPE_MODEL_PATTERN.test(model) : MODEL_PATTERN.test(model));
 }
 
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+function isModelScopeImageContent(parts) {
+  if (!Array.isArray(parts) || parts.length !== 2) return false;
+  const textPart = parts.find(part => part?.type === "text");
+  const imagePart = parts.find(part => part?.type === "image_url");
+  if (!textPart || Object.keys(textPart).sort().join(",") !== "text,type" ||
+      typeof textPart.text !== "string" || !textPart.text.trim() ||
+      textPart.text.length > 3000 || !imagePart ||
+      Object.keys(imagePart).sort().join(",") !== "image_url,type" ||
+      !imagePart.image_url || Object.keys(imagePart.image_url).join(",") !== "url") return false;
+  const match = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(imagePart.image_url.url);
+  if (!match || match[2].length % 4 !== 0) return false;
+  const bytes = Buffer.from(match[2], "base64");
+  return bytes.length > 0 && bytes.length <= MAX_IMAGE_BYTES &&
+    bytes.toString("base64") === match[2];
+}
+
 export class ModelPolicyError extends Error {
   constructor(code, status = 400) {
     super(code);
@@ -82,9 +99,9 @@ function ensureConfiguration({ provider, model, content, env }) {
   if (!modelList(env, provider).includes(model)) {
     throw new ModelPolicyError("model_not_allowlisted", 403);
   }
-  if (typeof content !== "string" || !content.trim() || content.length > 8000) {
-    throw new ModelPolicyError("invalid_content");
-  }
+  const validText = typeof content === "string" && Boolean(content.trim()) && content.length <= 8000;
+  const validImageQuestion = provider === "modelscope" && isModelScopeImageContent(content);
+  if (!validText && !validImageQuestion) throw new ModelPolicyError("invalid_content");
   const key = env[spec.key];
   if (typeof key !== "string" || !key.trim()) {
     throw new ModelPolicyError("provider_not_configured", 503);
@@ -95,7 +112,7 @@ function ensureConfiguration({ provider, model, content, env }) {
 /** Serialize exclusively to official fixed provider origins; never pass tools or URLs from callers. */
 export function buildGovernedProviderRequest({ provider, model, content }, env = process.env) {
   const key = ensureConfiguration({ provider, model, content, env });
-  const prompt = content.trim();
+  const prompt = typeof content === "string" ? content.trim() : content;
   const common = { "Content-Type": "application/json" };
   if (provider === "openai") {
     return {
@@ -186,7 +203,10 @@ export async function invokeGovernedModel(
     provider,
     model,
     action: trustedAction,
-    content_sha256: typeof content === "string" ? createHash("sha256").update(content).digest("hex") : null
+    content_sha256: typeof content === "string"
+      ? createHash("sha256").update(content).digest("hex")
+      : content && typeof content === "object"
+        ? createHash("sha256").update(JSON.stringify(content)).digest("hex") : null
   };
   // Always audit a denied action, and never contact a provider for denied work.
   if (!decision.allowed) {
