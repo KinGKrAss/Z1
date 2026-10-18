@@ -1,5 +1,5 @@
 /**
- * Z1 provider-neutral, text-only humanitarian model gateway.
+ * Z1 provider-neutral, governed humanitarian model gateway.
  * This is an internal server-side boundary, NOT a global provider policy change.
  * Only trusted server code may set trustedAction. No tools or arbitrary URLs.
  */
@@ -63,8 +63,12 @@ export function listGovernedProviders(env = process.env) {
     provider,
     models: modelList(env, provider),
     configured: Boolean(env[PROVIDERS[provider].key]) && modelList(env, provider).length > 0,
-    capabilities: provider === "modelscope" && (env.Z1_MODELSCOPE_VISION_MODELS || "").trim()
-      ? ["text", "image-understanding"] : ["text"],
+    capabilities: provider === "modelscope"
+      ? [
+          "text",
+          ...((env.Z1_MODELSCOPE_VISION_MODELS || "").trim() ? ["image-understanding"] : []),
+          ...((env.Z1_MODELSCOPE_IMAGE_MODELS || "").trim() ? ["image-generation"] : [])
+        ] : ["text"],
     policy: PEACE_POLICY.id
   }));
 }
