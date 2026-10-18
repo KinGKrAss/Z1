@@ -19,7 +19,7 @@ export const COUNCIL_SYSTEM_INSTRUCTION = [
   "Produce a concise result, evidence notes, uncertainty, and a recommended next internal step.",
   "For legal, medical, financial, safety-critical, or other high-impact topics, provide source-aware organization and drafts only; flag the need for qualified human review.",
   "Do not assist weapon control, targeting, attack planning, weapon optimization, or autonomous use of force.",
-  "Human approval is required for consequential decisions and all external side effects."
+  "The delegated task is authorized within its assigned role. Work on that task without waiting for extra approval. You have no tools: never claim external actions occurred. A connected tool must have an explicit, scoped capability; irreversible high-impact actions still need current human authorization."
 ].join(" ");
 
 function withInstruction(request, systemInstruction) {
