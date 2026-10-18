@@ -32,7 +32,7 @@ test("queued tasks persist, run autonomously, and learn only from accepted feedb
   runtime.started = true;
   assert.equal(await runtime.runOne(), true);
   assert.equal(runtime.listTasks("owner-a")[0].status, "completed");
-  assert.deepEqual(runtime.listMemories("owner-a"), []);
+  assert.equal(runtime.listMemories("owner-a").length, 1);\n  assert.equal(runtime.listMemories("owner-a")[0].review, "provisional");
 
   const pending = JSON.parse(await readFile(filePath, "utf8"));
   const memoryId = pending.memories[0].id;
@@ -47,7 +47,7 @@ test("queued tasks persist, run autonomously, and learn only from accepted feedb
   });
   restarted.started = true;
   assert.equal(await restarted.runOne(), true);
-  assert.match(prompts[1], /Previously accepted learning/);
+  assert.match(prompts[1], /Role memory \\(accepted/);
   assert.match(prompts[1], /Verified summary one/);
   assert.equal(restarted.listTasks("owner-a").length, 2);
 });
