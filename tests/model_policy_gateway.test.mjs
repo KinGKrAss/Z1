@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  buildGovernedProviderRequest, invokeGovernedModel, listGovernedProviders,
+  buildGovernedProviderRequest, invokeGovernedModel, listGovernedProviders,\n  submitGovernedImageGeneration, getGovernedImageGeneration,
   HUMANITARIAN_SYSTEM_INSTRUCTION
 } from "../core/model_policy_gateway.mjs";
 
@@ -207,4 +207,64 @@ test("ModelScope image adapter accepts bounded inline images only", () => {
   assert.throws(() => buildGovernedProviderRequest({
     provider:"openai", model:"gpt-example-a", content
   }, env), {code:"invalid_content"});
+});
+
+test("ModelScope image generation submits an audited async task and polls only the fixed task endpoint", async () => {
+  const imageEnv = {...env, Z1_MODELSCOPE_IMAGE_MODELS: "Qwen/Qwen-Image-2.1"};
+  const events = [];
+  let calls = 0;
+  const submitted = await submitGovernedImageGeneration({
+    model: "Qwen/Qwen-Image-2.1",
+    prompt: "A peaceful blue holographic AI character",
+    trustedAction: "education"
+  }, {
+    env: imageEnv,
+    audit: async event => events.push(event),
+    fetchImpl: async (url, options) => {
+      calls++;
+      assert.equal(url, "https://api-inference.modelscope.cn/v1/images/generations");
+      assert.equal(options.method, "POST");
+      assert.equal(options.redirect, "error");
+      assert.equal(options.headers["X-ModelScope-Async-Mode"], "true");
+      assert.equal(options.headers.Authorization, "Bearer test-modelscope-secret");
+      assert.deepEqual(JSON.parse(options.body), {
+        model: "Qwen/Qwen-Image-2.1", prompt: "A peaceful blue holographic AI character"
+      });
+      return {ok:true, json:async()=>({task_id:"12345678-1234-1234-1234-123456789abc"})};
+    }
+  });
+  assert.equal(submitted.status, "PENDING");
+  assert.equal(submitted.taskId, "12345678-1234-1234-1234-123456789abc");
+  assert.equal(calls, 1);
+  assert.deepEqual(events.map(event=>event.outcome), ["approved", "submitted"]);
+  assert.ok(!JSON.stringify(events).includes("A peaceful blue holographic AI character"));
+  const result = await getGovernedImageGeneration({
+    model: "Qwen/Qwen-Image-2.1", taskId: submitted.taskId
+  }, {
+    env: imageEnv,
+    fetchImpl: async (url, options) => {
+      calls++;
+      assert.equal(url, "https://api-inference.modelscope.cn/v1/tasks/12345678-1234-1234-1234-123456789abc");
+      assert.equal(options.method, "GET");
+      assert.equal(options.headers["X-ModelScope-Task-Type"], "image_generation");
+      return {ok:true, json:async()=>({
+        task_status:"SUCCEED", output_images:["https://modelscope.cn/generated/hologram.png"]
+      })};
+    }
+  });
+  assert.equal(result.status, "SUCCEED");
+  assert.deepEqual(result.images, ["https://modelscope.cn/generated/hologram.png"]);
+  assert.equal(calls, 2);
+});
+
+test("ModelScope image generation rejects non-allowlisted models and malformed task IDs before network access", async () => {
+  let calls = 0;
+  const imageEnv = {...env, Z1_MODELSCOPE_IMAGE_MODELS: "Qwen/Qwen-Image-2.1"};
+  await assert.rejects(submitGovernedImageGeneration({
+    model:"Qwen/other", prompt:"a digital holographic being", trustedAction:"education"
+  }, {env:imageEnv, audit:async()=>{}, fetchImpl:async()=>{calls++;}}), {code:"model_not_allowlisted"});
+  await assert.rejects(getGovernedImageGeneration({
+    model:"Qwen/Qwen-Image-2.1", taskId:"../../attacker"
+  }, {env:imageEnv, fetchImpl:async()=>{calls++;}}), {code:"invalid_image_task"});
+  assert.equal(calls, 0);
 });
