@@ -21,7 +21,7 @@ The isolated service in `runtime/z1-github-api-server.mjs` exposes only `/health
 
 ### One-time Google Cloud setup
 
-1. Choose a Google Cloud project and region. Enable Cloud Run, Artifact Registry, IAM Credentials, and Security Token Service APIs. Create a Docker Artifact Registry repository in that region.
+1. Choose a Google Cloud project and region. Enable Cloud Run, Artifact Registry, Secret Manager, IAM, IAM Credentials, and Security Token Service APIs. Create a Docker Artifact Registry repository in that region.
 2. Create a runtime service account for the service. Create Secret Manager secrets named `z1-github-tool-token` and `z1-github-token`. Add secret versions directly in Secret Manager; never place their values in GitHub or this repository. Grant the runtime service account `roles/secretmanager.secretAccessor` on those two secrets only.
 3. Create a separate deployment service account. Grant it Cloud Run deployment and Artifact Registry write permissions, plus `roles/iam.serviceAccountUser` on the runtime service account.
 4. Configure Workload Identity Federation for GitHub Actions. Restrict the provider to repository `KinGKrAss/Z1` and ref `refs/heads/main`; avoid a long-lived service-account JSON key.
