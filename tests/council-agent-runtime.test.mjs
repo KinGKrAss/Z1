@@ -13,7 +13,7 @@ test("canonical Council has 33 roles and keeps Z1-Core separate", () => {
   assert.equal(Z1_CORE_ROLE.separateFromCouncil, true);
 });
 
-test("queued tasks persist, run autonomously, and learn only from accepted feedback", async t => {
+test("queued tasks persist, learn autonomously, and use owner feedback", async t => {
   const dir = await mkdtemp(path.join(os.tmpdir(), "z1-council-"));
   t.after(() => rm(dir, { recursive:true, force:true }));
   const filePath = path.join(dir, "agents.json");
