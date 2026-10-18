@@ -167,13 +167,13 @@ gcloud iam workload-identity-pools providers create-oidc "$WIF_PROVIDER" \
   --workload-identity-pool="$WIF_POOL" \
   --location=global \
   --display-name="GitHub Actions: ${GITHUB_REPOSITORY} main" \
-  --issuer-uri="https://token.actions.githubusercontent.com" \
-  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref" \
-  --attribute-condition="assertion.repository == '${GITHUB_REPOSITORY}' && assertion.ref == 'refs/heads/main'" \
+  --issuer-uri="https://token.actions.githubusercontent.com/" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository_id=assertion.repository_id,attribute.ref=assertion.ref" \
+  --attribute-condition="assertion.repository_id == '1249461106' && assertion.ref == 'refs/heads/main'" \
   --project="$PROJECT_ID"
 
 PROVIDER_RESOURCE="projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${WIF_POOL}/providers/${WIF_PROVIDER}"
-REPOSITORY_PRINCIPAL="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${WIF_POOL}/attribute.repository/${GITHUB_REPOSITORY}"
+REPOSITORY_PRINCIPAL="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${WIF_POOL}/attribute.repository_id/1249461106"
 gcloud iam service-accounts add-iam-policy-binding "$DEPLOYER_EMAIL" \
   --member="$REPOSITORY_PRINCIPAL" \
   --role="roles/iam.workloadIdentityUser" \
