@@ -65,9 +65,10 @@ export async function handleZ1AgentApi(req, res, url, { readJson, json }) {
     const worker = instance.status();
     const registry = COUNCIL_33.map(role => {
       const roleTasks = tasks.filter(task => task.roleId === role.id);
+      const latestTask = roleTasks.at(-1);
       const status = roleTasks.some(task => task.status === "running") && worker.running
         ? "active"
-        : roleTasks.some(task => task.status === "failed") ? "alert" : "standby";
+        : latestTask?.status === "failed" ? "alert" : "standby";
       return {
         id:role.position, roleId:role.id, name:role.name, title:role.title,
         domain:role.domain, mission:role.mission, character:role.tone, status
