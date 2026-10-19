@@ -24,7 +24,8 @@
     "test:github-api-server": "node --test tests/z1-github-api-server.test.mjs",
     "test:equity-ledger": "node --test tests/equity-ledger.test.mjs",
     "test:collective-memory": "node --test tests/collective-memory.test.mjs",
-    "test:gold-reserve": "node --test tests/gold-reserve-registry.test.mjs"
+    "test:gold-reserve": "node --test tests/gold-reserve-registry.test.mjs",
+    "test:goddesses-api": "node --test tests/goddesses-api.test.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
