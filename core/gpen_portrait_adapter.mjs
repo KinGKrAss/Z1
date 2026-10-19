@@ -32,7 +32,11 @@ function runWorker(input, { python = process.env.Z1_GPEN_PYTHON || "python3",
   script = path.resolve(process.cwd(), "runtime/gpen_portrait_worker.py"),
   spawnImpl = spawn, timeoutMs = 180000 } = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawnImpl(python, [script], { stdio: ["pipe", "pipe", "ignore"], env: process.env });
+    const workerEnv = {};
+    for (const name of ["PATH", "HOME", "MODELSCOPE_CACHE", "CUDA_VISIBLE_DEVICES", "LD_LIBRARY_PATH"]) {
+      if (typeof process.env[name] === "string") workerEnv[name] = process.env[name];
+    }
+    const child = spawnImpl(python, [script], { stdio: ["pipe", "pipe", "ignore"], env: workerEnv });
     let stdout = "";
     let settled = false;
     const timer = setTimeout(() => {
