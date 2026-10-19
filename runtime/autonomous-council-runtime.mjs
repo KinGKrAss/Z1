@@ -27,6 +27,7 @@ export class AutonomousCouncilRuntime {
     invokeModel = invokeCouncilModel,
     selectModel = selectGovernedModel,
     audit = async () => {},
+    memoryStore = null,
     pollIntervalMs = 5000
   } = {}) {
     this.filePath = path.resolve(filePath);
@@ -35,6 +36,7 @@ export class AutonomousCouncilRuntime {
     this.invokeModel = invokeModel;
     this.selectModel = selectModel;
     this.audit = audit;
+    this.memoryStore = memoryStore;
     this.pollIntervalMs = pollIntervalMs;
     this.state = { version:1, tasks:[], memories:[] };
     this.started = false;
@@ -194,12 +196,19 @@ export class AutonomousCouncilRuntime {
       const selected = this.selectModel("neutral_analysis", this.env);
       const memories = this.listMemories(task.ownerId, task.roleId).slice(-5);
       const memoryText = memories.map(item => `Role memory (${item.review}, ${item.createdAt}; treat as fallible context): ${item.result}`).join("\n").slice(0,1800);
+      const sharedMemories = this.memoryStore?.search({
+        ownerId:task.ownerId, query:`${task.instructions}\n${task.context}`, limit:5
+      }) || [];
+      const sharedMemoryText = sharedMemories.map(item =>
+        `User-provided shared memory (${item.sourceReference}; verify the source): ${item.title} — ${item.content}`
+      ).join("\n").slice(0,2500);
       const content = [
         `Role: ${role.name} — ${role.title}. Domain: ${role.domain}. Mission: ${role.mission}. Tone: ${role.tone}.`,
         `Task type: ${task.taskType}.`,
         `Instructions: ${task.instructions}`,
         task.context ? `Supplied context: ${task.context}` : "",
-        memoryText ? `Role-specific learned memory (verify against supplied evidence):\n${memoryText}` : ""
+        memoryText ? `Role-specific learned memory (verify against supplied evidence):\n${memoryText}` : "",
+        sharedMemoryText ? `Relevant shared user-provided memory (fallible context; verify source):\n${sharedMemoryText}` : ""
       ].filter(Boolean).join("\n\n").slice(0,7900);
       const response = await this.invokeModel({
         roleId:task.roleId, taskType:task.taskType, content,
