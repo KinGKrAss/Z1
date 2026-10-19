@@ -4,6 +4,7 @@ import { mkdir, appendFile } from "node:fs/promises";
 import path from "node:path";
 import { AutonomousCouncilRuntime } from "./autonomous-council-runtime.mjs";
 import { CollectiveMemoryStore } from "./collective-memory-runtime.mjs";
+import { COUNCIL_33, getCouncilRole } from "../core/council_33.mjs";
 
 let runtime;
 let memoryStore;
@@ -50,12 +51,64 @@ export async function handleZ1AgentApi(req, res, url, { readJson, json }) {
   const pathname = url.pathname;
   const isAgentRoute = pathname.startsWith("/api/z1/agents");
   const isMemoryRoute = pathname.startsWith("/api/z1/memory");
-  if (!isAgentRoute && !isMemoryRoute) return false;
+  const isGoddessRoute = pathname === "/api/goddesses" || pathname === "/api/goddesses/execute";
+  if (!isAgentRoute && !isMemoryRoute && !isGoddessRoute) return false;
   if (!process.env.Z1_MODEL_GATEWAY_TOKEN) return fail(res,json,503,"gateway_not_configured");
   if (!tokenAccepted(req)) return fail(res,json,401,"unauthorized");
   const configuredOwner = ownerId();
   if (!configuredOwner) return fail(res,json,503,"owner_not_configured");
   const instance = await getRuntime();
+
+  if (pathname === "/api/goddesses") {
+    if (req.method !== "GET") return fail(res,json,405,"method_not_allowed");
+    const tasks = instance.listTasks(configuredOwner);
+    const worker = instance.status();
+    const registry = COUNCIL_33.map(role => {
+      const roleTasks = tasks.filter(task => task.roleId === role.id);
+      const status = roleTasks.some(task => task.status === "running") && worker.running
+        ? "active"
+        : roleTasks.some(task => task.status === "failed") ? "alert" : "standby";
+      return {
+        id:role.position, roleId:role.id, name:role.name, title:role.title,
+        domain:role.domain, mission:role.mission, character:role.tone, status
+      };
+    });
+    return respond(res,json,200,{
+      totalGoddesses:registry.length,
+      activeUnits:registry.filter(role => role.status === "active").length,
+      worker, registry
+    });
+  }
+
+  if (pathname === "/api/goddesses/execute") {
+    if (req.method !== "POST") return fail(res,json,405,"method_not_allowed");
+    try {
+      const body = await readJson(req);
+      const numericId = Number(body.roleId ?? body.id);
+      const byPosition = Number.isInteger(numericId) && numericId >= 1
+        ? COUNCIL_33.find(role => role.position === numericId) : null;
+      const requestedDomain = typeof body.domain === "string"
+        ? body.domain.normalize("NFKC").trim().toLocaleLowerCase("de-DE") : "";
+      const byDomain = COUNCIL_33.find(role =>
+        role.domain.normalize("NFKC").toLocaleLowerCase("de-DE") === requestedDomain);
+      const role = getCouncilRole(body.roleId) || byPosition || byDomain;
+      if (!role) return fail(res,json,400,"unknown_role_or_domain");
+      if (typeof body.payload !== "string" || !body.payload.trim()) {
+        return fail(res,json,400,"payload_required");
+      }
+      const task = await instance.createTask({
+        ownerId:configuredOwner, roleId:role.id, taskType:body.taskType || "analysis",
+        instructions:body.payload, context:typeof body.context === "string" ? body.context : ""
+      });
+      return respond(res,json,202,{
+        success:true, task,
+        note:"Aufgabe ist eingereiht. Die Ausführung erfolgt nur mit aktiviertem Z1-Worker und freigegebenem Modell."
+      });
+    } catch (error) {
+      const status = ["task_queue_full","invalid_run_at"].includes(error.message) ? 409 : 400;
+      return fail(res,json,status,error.message || "invalid_request");
+    }
+  }
 
   if (pathname === "/api/z1/memory/items") {
     if (req.method === "GET") return respond(res,json,200,{items:memoryStore.list(configuredOwner)});
