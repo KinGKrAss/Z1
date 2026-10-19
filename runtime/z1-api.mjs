@@ -2,6 +2,7 @@ import http from "node:http";
 import { handleSpeakApi } from "./z1-speak-api.mjs";
 import { PEACE_POLICY } from "../core/humanitarian_policy.mjs";
 import { handleZ1AiApi } from "./z1-ai-api.mjs";
+import { handleZ1GpenApi } from "./z1-gpen-api.mjs";
 import { handleZ1AgentApi, startAgentRuntime } from "./z1-agent-api.mjs";
 import { spawn } from "node:child_process";
 import path from "node:path";
@@ -65,6 +66,7 @@ const server = http.createServer(async (req, res) => {
   if (await handleSpeakApi(req, res, url, { json, readJson })) return;
   if (await handleZ1AgentApi(req, res, url, { json, readJson })) return;
   if (await handleZ1AiApi(req, res, url, { json, readJson })) return;
+  if (await handleZ1GpenApi(req, res, url, { json, readJson })) return;
   if (await handleZ1GitHubApi(req, res, url, { json })) return;
   if (req.method === "GET" && url.pathname === "/health") return json(res, 200, { status: "online", service: "z1-api", runtime: "node", node: process.version });
   if (req.method === "GET" && url.pathname === "/api/z1/peace-policy") return json(res, 200, PEACE_POLICY);
