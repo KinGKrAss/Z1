@@ -214,8 +214,8 @@ export default function App() {
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
   // States for Decentralized Web3 Multi-Wallet Bridge (Bitcoin, TON, EVM, etc.)
-  const [tonAddress, setTonAddress] = useState<string>("UQD5aU7pOi_wdgr8TDo26riUDqbCV-7IO7WZ0-7Rn1aw35XA");
-  const [evmAddress, setEvmAddress] = useState<string>("0x31DB11bFFC9a95bfF5253716d0b4b59a183DA399");
+  const [tonAddress, setTonAddress] = useState<string>("");
+  const [evmAddress, setEvmAddress] = useState<string>("");
   const [walletSyncState, setWalletSyncState] = useState<'idle' | 'syncing' | 'completed'>('idle');
   const [walletSyncProgress, setWalletSyncProgress] = useState<number>(0);
   const [walletSyncLogs, setWalletSyncLogs] = useState<string[]>([]);
@@ -346,39 +346,17 @@ export default function App() {
     }, 2500);
   };
 
-  // Web3 multi-wallet coin linkage simulation
+  // Honest demo status: no wallet provider, RPC endpoint, or PPT contract is configured.
   const runCoinWalletLinkage = () => {
-    setWalletSyncState('syncing');
+    setWalletSyncState('completed');
     setWalletSyncProgress(0);
     setWalletSyncLogs([
-      "📡 Verbindungs-Handshake mit Blockchain-Zentralregister im Münsterland wird initiiert...",
+      "DEMO: Keine Blockchain-Verbindung eingerichtet; es wurde kein Netzwerk abgefragt.",
+      `Bitcoin-Adresse eingetragen: ${tonAddress.trim() ? "ja, ungeprüft" : "nein"}.`,
+      `EVM-Adresse eingetragen: ${evmAddress.trim() ? "ja, ungeprüft" : "nein"}.`,
+      "PPT-Tokenvertrag und Zielnetzwerk sind in Z1 noch nicht konfiguriert.",
+      "Keine Wallet wurde verifiziert. Es wurden keine Coins synchronisiert, signiert oder übertragen."
     ]);
-
-    let step = 0;
-    const interval = setInterval(() => {
-      step += 12.5;
-      setWalletSyncProgress(Math.min(step, 100));
-
-      if (step === 12.5) {
-        setWalletSyncLogs(prev => [...prev, `🔑 TON-Wallet verifiziert: ${tonAddress.slice(0, 10)}...${tonAddress.slice(-8)}`]);
-      } else if (step === 25) {
-        setWalletSyncLogs(prev => [...prev, `🔑 EVM-Wallet verifiziert: ${evmAddress.slice(0, 8)}...${evmAddress.slice(-6)}`]);
-      } else if (step === 37.5) {
-        setWalletSyncLogs(prev => [...prev, `₿ Bitcoin-Brücke (BTC Cross-Chain Vault Bridge) etabliert. All Bitcoins routing-enabled.`]);
-      } else if (step === 50) {
-        setWalletSyncLogs(prev => [...prev, `♦ Ethereum (ETH) Guthaben erfolgreich mit EVM-Konto synchronisiert.`]);
-      } else if (step === 62.5) {
-        setWalletSyncLogs(prev => [...prev, `💎 Toncoin (TON) & Telegram-Schnittstelle vollständig gekoppelt.`]);
-      } else if (step === 75) {
-        setWalletSyncLogs(prev => [...prev, `🪙 Stablecoins & Token verknüpft: Tether (USDT), BNB, GoMining Token (GMT) vollständig gebunden.`]);
-      } else if (step === 87.5) {
-        setWalletSyncLogs(prev => [...prev, `⚡ Datenabfrage: GoMining Dashboard-Rewards synchronisieren sofort in die verifizierte TON-Miner-Chain!`]);
-      } else if (step >= 100) {
-        clearInterval(interval);
-        setWalletSyncState('completed');
-        setWalletSyncLogs(prev => [...prev, `🎉 ERFOLG: Alle Bitcoins und weiteren Crypto-Assets wurden mit den Wallet-Adressen verbunden und gesichert!`]);
-      }
-    }, 250);
   };
 
   // GCP IAM functions based on documentation
@@ -1153,7 +1131,7 @@ export default function App() {
               {/* Integrated Sync Logs Console inside Multi-wallet Binder */}
               <div className="mt-4 pt-3 border-t border-zinc-900 space-y-3">
                 <div className="flex justify-between items-center text-[10.5px]">
-                  <span className="text-zinc-400 font-mono">On-Chain Ledger Consolidation Logs:</span>
+                  <span className="text-zinc-400 font-mono">Wallet-Status (Demo, keine Live-Prüfung):</span>
                   <span className="text-[9px] text-[#f7931a]">{walletSyncProgress}%</span>
                 </div>
                 <div className="min-h-[110px] max-h-[150px] bg-black border border-zinc-850 p-2.5 rounded-lg font-mono text-[9px] text-[#f7931a] overflow-y-auto space-y-1">
@@ -1177,7 +1155,7 @@ export default function App() {
                     className="flex-1 bg-gradient-to-r from-[#f7931a] to-amber-500 text-white font-orbitron font-bold text-xs uppercase py-3.5 px-5 rounded-xl hover:shadow-[0_0_20px_rgba(247,147,26,0.4)] hover:scale-[1.01] transition-all cursor-pointer flex justify-center items-center gap-2 disabled:opacity-40"
                   >
                     <RefreshCw className={`w-4 h-4 ${walletSyncState === 'syncing' ? 'animate-spin' : ''}`} />
-                    Hier klicken um "alle Bitcoins und alle anderen Coins" zu binden & synchronisieren!
+                    Wallet-Status anzeigen (Demo)
                   </button>
                 </div>
               </div>
