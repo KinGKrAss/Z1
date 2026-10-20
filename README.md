@@ -47,6 +47,10 @@ This is **not** a change to third-party providers' global models.
 The gateway is disabled until configured by an authorized operator,
 and mocked tests are not proof of a live deployment.
 
+An optional GPEN portrait-enhancement stage is available for generated or
+user-supplied images. It is a separate GPU-backed local worker and does not
+generate images by itself. See [GPEN adapter setup](docs/GPEN_ADAPTER.md).
+
 For ModelScope image generation, set the server secrets MODELSCOPE_TOKEN and
 Z1_MODEL_GATEWAY_TOKEN, then allowlist a model in Z1_MODELSCOPE_IMAGE_MODELS
 (for example Qwen/Qwen-Image-2.1). Send an authenticated POST
