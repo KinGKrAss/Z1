@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { COUNCIL_33, Z1_CORE_ROLE } from "../core/council_33.mjs";
 import { AutonomousCouncilRuntime } from "../runtime/autonomous-council-runtime.mjs";
+import { CollectiveMemoryStore } from "../runtime/collective-memory-runtime.mjs";
 
 test("canonical Council has 33 roles and keeps Z1-Core separate", () => {
   assert.equal(COUNCIL_33.length, 33);
@@ -61,4 +62,27 @@ test("worker stays off unless explicitly enabled", async t => {
   });
   assert.equal(await runtime.start(), false);
   assert.equal(runtime.status().running, false);
+});
+
+test("delegated Council roles receive relevant owner-scoped collective memory", async t => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "z1-council-memory-"));
+  t.after(() => rm(dir, { recursive:true, force:true }));
+  const memoryStore = await new CollectiveMemoryStore({filePath:path.join(dir,"memory.json")}).init();
+  await memoryStore.add({
+    ownerId:"owner-a", title:"Windpark Münster",
+    content:"The annual yield report is filed in the project archive.",
+    sourceReference:"doc:windpark-annual-report",
+  });
+  const prompts = [];
+  const runtime = await new AutonomousCouncilRuntime({
+    filePath:path.join(dir,"agents.json"), env:{Z1_AGENTS_ENABLED:"true"},
+    memoryStore, selectModel:() => ({provider:"test",model:"test-model"}),
+    invokeModel:async request => { prompts.push(request.content); return {text:"Summary prepared."}; },
+  }).init();
+  await runtime.createTask({ownerId:"owner-a",roleId:"zoe",taskType:"summary",instructions:"Summarize the Windpark Münster yield report."});
+  runtime.started = true;
+  assert.equal(await runtime.runOne(),true);
+  assert.match(prompts[0],/doc:windpark-annual-report/);
+  assert.match(prompts[0],/fallible context; verify source/);
+  assert.doesNotMatch(prompts[0],/owner-b/);
 });

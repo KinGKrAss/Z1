@@ -26,6 +26,12 @@ routing evaluation, and storage location are configured.
 All endpoints require `Authorization: Bearer <Z1_MODEL_GATEWAY_TOKEN>`.
 
 - `GET /api/z1/agents/status`
+- `GET /api/goddesses` compatibility route returns the same canonical 33-role
+  registry. `active` means a task is currently running; `standby` means no
+  task is running; `alert` means a role has a failed task.
+- `POST /api/goddesses/execute` compatibility route accepts a canonical
+  `roleId` or an exact registered `domain`, plus `payload`. It returns HTTP
+  202 with a queued task. It does not synchronously generate an answer.
 - `GET /api/z1/agents/tasks`
 - `POST /api/z1/agents/tasks` with `roleId`, `taskType`, `instructions`,
   optional `context`, `runAt` (ISO time), and optional
