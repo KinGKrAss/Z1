@@ -11,6 +11,7 @@ export default defineConfig(() => {
         input: {
           main: path.resolve(__dirname, 'index.html'),
           speak: path.resolve(__dirname, 'speak.html'),
+          council: path.resolve(__dirname, 'council.html'),
         },
       },
     },

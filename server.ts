@@ -10,6 +10,35 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
+const z1ApiBaseUrl = (process.env.Z1_API_BASE_URL || "http://127.0.0.1:3001").replace(/\/+$/, "");
+app.get("/api/z1/dashboard-health", async (_req, res) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3000);
+  try {
+    const [coreResponse, modulesResponse] = await Promise.all([
+      fetch(`${z1ApiBaseUrl}/api/z1/status`, { signal: controller.signal }),
+      fetch(`${z1ApiBaseUrl}/api/z1/modules`, { signal: controller.signal }),
+    ]);
+    if (!coreResponse.ok || !modulesResponse.ok) throw new Error("Z1 API error");
+    const [corePayload, modulesPayload] = await Promise.all([coreResponse.json(), modulesResponse.json()]);
+    res.json({
+      reachable: true,
+      checkedAt: new Date().toISOString(),
+      coreStatus: {
+        status: typeof corePayload?.status === "string" ? corePayload.status : null,
+        runtime: typeof corePayload?.runtime === "string" ? corePayload.runtime : null,
+      },
+      modules: Array.isArray(modulesPayload?.modules)
+        ? modulesPayload.modules.filter((module: unknown) => typeof module === "string")
+        : [],
+    });
+  } catch {
+    res.json({ reachable: false, checkedAt: new Date().toISOString(), coreStatus: null, modules: [] });
+  } finally {
+    clearTimeout(timeout);
+  }
+});
+
 // Mock Data for Goddesses
 const GODDESSES_FILE = path.join(process.cwd(), "api_endpoints.local.json");
 const NEW_GODDESSES_DATA = [
