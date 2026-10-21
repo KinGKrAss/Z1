@@ -38,7 +38,8 @@ export async function discoverOrbsTonNodes({ fetchImpl = fetch, network = "mainn
   const protocolNetwork = (network === "mainnet" ? "v2-" : "v2-") + network;
   return nodes.filter((node) => {
     const successAt = Number(node?.Mngr?.successTS);
-    return node?.Healthy === "1"
+    return /^[a-fA-F0-9]{40}$/.test(node?.NodeId ?? "")
+      && node?.Healthy === "1"
       && Number(node?.Weight) > 0
       && node?.Mngr?.health?.[protocolNetwork] === true
       && Number.isFinite(successAt)
