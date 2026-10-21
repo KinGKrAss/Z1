@@ -25,7 +25,8 @@
     "test:equity-ledger": "node --test tests/equity-ledger.test.mjs",
     "test:collective-memory": "node --test tests/collective-memory.test.mjs",
     "test:gold-reserve": "node --test tests/gold-reserve-registry.test.mjs",
-    "test:goddesses-api": "node --test tests/goddesses-api.test.mjs"
+    "test:goddesses-api": "node --test tests/goddesses-api.test.mjs",
+    "test:agents": "node --test tests/council-agent-runtime.test.mjs tests/council-agent-gateway.test.mjs tests/model-router.test.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
