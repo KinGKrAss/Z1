@@ -4,16 +4,17 @@ import { discoverOrbsTonNodes, readTonBalance } from "../runtime/orbs-ton-access
 
 const address = "EQCD39VS5jcptHL8vMjEXrzGaRcCVYto7HUn4bpAOg8xqB2N";
 const now = 1_800_000_000_000;
+const nodeId = "a".repeat(40);
 const response = (data) => ({ ok: true, status: 200, json: async () => data });
 
 test("filters Orbs nodes by health, protocol, weight and freshness", async () => {
   const nodes = [
-    { NodeId: "healthy", Weight: 3, Healthy: "1", Mngr: { successTS: now - 1000, health: { "v2-mainnet": true } } },
-    { NodeId: "unhealthy", Weight: 3, Healthy: "0", Mngr: { successTS: now - 1000, health: { "v2-mainnet": true } } },
-    { NodeId: "stale", Weight: 3, Healthy: "1", Mngr: { successTS: now - 700_000, health: { "v2-mainnet": true } } },
+    { NodeId: nodeId, Weight: 3, Healthy: "1", Mngr: { successTS: now - 1000, health: { "v2-mainnet": true } } },
+    { NodeId: "b".repeat(40), Weight: 3, Healthy: "0", Mngr: { successTS: now - 1000, health: { "v2-mainnet": true } } },
+    { NodeId: "c".repeat(40), Weight: 3, Healthy: "1", Mngr: { successTS: now - 700_000, health: { "v2-mainnet": true } } },
   ];
   const result = await discoverOrbsTonNodes({ fetchImpl: async () => response(nodes), now });
-  assert.deepEqual(result.map((node) => node.NodeId), ["healthy"]);
+  assert.deepEqual(result.map((node) => node.NodeId), [nodeId]);
 });
 
 test("reads TON balance through a healthy Orbs endpoint and preserves nano precision", async () => {
@@ -21,7 +22,7 @@ test("reads TON balance through a healthy Orbs endpoint and preserves nano preci
   const fetchImpl = async (url) => {
     calls.push(url);
     if (url.includes("/mngr/nodes")) {
-      return response([{ NodeId: "node-1", Weight: 1, Healthy: "1", Mngr: { successTS: now, health: { "v2-mainnet": true } } }]);
+      return response([{ NodeId: nodeId, Weight: 1, Healthy: "1", Mngr: { successTS: now, health: { "v2-mainnet": true } } }]);
     }
     return response({ ok: true, result: "1234567890" });
   };
