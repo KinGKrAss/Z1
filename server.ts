@@ -3,12 +3,14 @@ import cors from "cors";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import fs from "fs";
+import { createOrbsTonAccessRouter } from "./runtime/orbs-ton-router.mjs";
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use("/api/networks/orbs-ton", createOrbsTonAccessRouter());
 
 const z1ApiBaseUrl = (process.env.Z1_API_BASE_URL || "http://127.0.0.1:3001").replace(/\/+$/, "");
 app.get("/api/z1/dashboard-health", async (_req, res) => {

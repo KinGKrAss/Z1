@@ -42,6 +42,8 @@ jobs:
         run: npm run build
       - name: Test Z1 humanitarian multi-model gateway
         run: node --test tests/humanitarian_policy.test.mjs tests/model_policy_gateway.test.mjs tests/model-router.test.mjs tests/z1-ai-api.test.mjs tests/council-agent-runtime.test.mjs tests/council-agent-gateway.test.mjs tests/gpen_portrait_adapter.test.mjs
+      - name: Test Orbs TON Access adapter
+        run: npm run test:orbs-ton
       - name: Test read-only GitHub API
         run: npm run test:github-api
       - name: Test isolated GitHub tools server
