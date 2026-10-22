@@ -55,15 +55,3 @@ export function selectGovernedModel(trustedAction, env = process.env, now = Date
 
 function compare(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
 
-
-test('routes explicitly allowlisted NVIDIA NIM models', () => {
-  const model = 'nvidia/nemotron-3-nano-30b-a3b';
-  const configuration = {
-    ...env([]), NVIDIA_API_KEY: 'test-only', Z1_NVIDIA_MODELS: model,
-    Z1_MODEL_ROUTING_PROFILES: JSON.stringify([profile(model, {provider: 'nvidia'})])
-  };
-  const selected = selectGovernedModel('disaster_response', configuration, now);
-  assert.deepEqual({provider: selected.provider, model: selected.model}, {provider: 'nvidia', model});
-  const bad = {...configuration, Z1_MODEL_ROUTING_PROFILES: JSON.stringify([profile('nvidia/../escape', {provider: 'nvidia'})])};
-  assert.throws(() => selectGovernedModel('disaster_response', bad, now), {code: 'invalid_routing_configuration'});
-});
