@@ -37,6 +37,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { Goddess, Status } from './types';
+import ZoeAvatarPanel from './components/ZoeAvatarPanel';
 
 const ALL_IAM_PERMISSIONS = [
   { id: 'billing.accounts.get', desc: 'Sichtbarkeit der Konto-Basisdaten (Erforderlich für fast alle Aktionen)', category: 'Account-Steuerung' },
@@ -492,6 +493,8 @@ export default function App() {
             </button>
           </div>
         </header>
+
+        <ZoeAvatarPanel />
 
         {/* Global Live Statistics Section */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-zinc-950/40 border border-zinc-850 rounded-xl font-mono text-xs">
