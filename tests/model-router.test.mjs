@@ -62,3 +62,16 @@ test('selection returns only model identity and a traceable evaluation, never cr
   assert.equal(result.routing.evaluationId, 'eval-fixture');
   assert.ok(!JSON.stringify(result).includes('test-only'));
 });
+
+
+test('routes explicitly allowlisted NVIDIA NIM models', () => {
+  const model = 'nvidia/nemotron-3-nano-30b-a3b';
+  const configuration = {
+    ...env([]), NVIDIA_API_KEY: 'test-only', Z1_NVIDIA_MODELS: model,
+    Z1_MODEL_ROUTING_PROFILES: JSON.stringify([profile(model, {provider: 'nvidia'})])
+  };
+  const selected = selectGovernedModel('disaster_response', configuration, now);
+  assert.deepEqual({provider: selected.provider, model: selected.model}, {provider: 'nvidia', model});
+  const bad = {...configuration, Z1_MODEL_ROUTING_PROFILES: JSON.stringify([profile('nvidia/../escape', {provider: 'nvidia'})])};
+  assert.throws(() => selectGovernedModel('disaster_response', bad, now), {code: 'invalid_routing_configuration'});
+});
