@@ -34,7 +34,7 @@ class AnimationEngine:
 
         blink_phase = t % self.blink_interval
         if blink_phase < self.blink_duration:
-            blink = (1.0 - math.cos(math.pi * blink_phase / self.blink_duration)) / 2.0
+            blink = (1.0 - math.cos(2.0 * math.pi * blink_phase / self.blink_duration)) / 2.0
         else:
             blink = 0.0
 
