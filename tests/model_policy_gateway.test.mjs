@@ -18,6 +18,7 @@ const env = {
   MISTRAL_API_KEY: "test-mistral-secret",
   COHERE_API_KEY: "test-cohere-secret",
   MODELSCOPE_TOKEN: "test-modelscope-secret",
+  NVIDIA_API_KEY: "test-nvidia-secret",
   Z1_OPENAI_MODELS: "gpt-example-a,gpt-example-b",
   Z1_XAI_MODELS: "grok-example",
   Z1_ANTHROPIC_MODELS: "claude-example",
@@ -29,6 +30,7 @@ const env = {
   Z1_MISTRAL_MODELS: "mistral-example",
   Z1_COHERE_MODELS: "cohere-example",
   Z1_MODELSCOPE_MODELS: "Qwen/Qwen3.5-35B-A3B",
+  Z1_NVIDIA_MODELS: "nvidia/nemotron-3-nano-30b-a3b",
   Z1_MODELSCOPE_VISION_MODELS: "Qwen/Qwen3.5-35B-A3B"
 };
 const samples = [
@@ -42,12 +44,13 @@ const samples = [
   ["zhipu", "glm-example", "https://api.z.ai/api/paas/v4/chat/completions"],
   ["mistral", "mistral-example", "https://api.mistral.ai/v1/chat/completions"],
   ["cohere", "cohere-example", "https://api.cohere.com/v2/chat"],
-  ["modelscope", "Qwen/Qwen3.5-35B-A3B", "https://api-inference.modelscope.cn/v1/chat/completions"]
+  ["modelscope", "Qwen/Qwen3.5-35B-A3B", "https://api-inference.modelscope.cn/v1/chat/completions"],
+  ["nvidia", "nvidia/nemotron-3-nano-30b-a3b", "https://integrate.api.nvidia.com/v1/chat/completions"]
 ];
 
 test("provider list contains no secret values", () => {
   const providers = listGovernedProviders(env);
-  assert.equal(providers.length, 11);
+  assert.equal(providers.length, 12);
   assert.ok(providers.every((item) => item.configured && item.policy === "Z1-PEACE-001"));
   assert.deepEqual(providers.find(item => item.provider === "modelscope").capabilities,
     ["text", "image-understanding"]);
@@ -115,7 +118,7 @@ test("audit sink failure is fail-closed", async () => {
   assert.equal(requests, 0);
 });
 
-test("all eleven providers return normalized text using mocked network", async () => {
+test("all twelve providers return normalized text using mocked network", async () => {
   const answers = {
     openai: {output: [{content:[{type:"output_text",text:"OpenAI reply"}]}]},
     xai: {choices:[{message:{content:"Grok reply"}}]},
@@ -127,7 +130,8 @@ test("all eleven providers return normalized text using mocked network", async (
     zhipu: {choices:[{message:{content:"GLM reply"}}]},
     mistral: {choices:[{message:{content:"Mistral reply"}}]},
     cohere: {message:{content:[{type:"text",text:"Cohere reply"}]}},
-    modelscope: {choices:[{message:{content:"ModelScope reply"}}]}
+    modelscope: {choices:[{message:{content:"ModelScope reply"}}]},
+    nvidia: {choices:[{message:{content:"NVIDIA reply"}}]}
   };
   for (const [provider, model] of samples) {
     const audit = [];
@@ -171,14 +175,14 @@ test("missing audit is forbidden", async () => {
 
 test("unconfigured and unknown model IDs remain blocked for new providers", () => {
   for (const [provider, model] of samples) {
-    const unknownModel = provider === "modelscope" ? "unknown/model" : "arbitrary-unknown";
+    const unknownModel = ["modelscope","nvidia"].includes(provider) ? "unknown/model" : "arbitrary-unknown";
     assert.throws(() => buildGovernedProviderRequest({provider,model:unknownModel,content:"help"}, env),
       (err) => err.code === "model_not_allowlisted");
     const withoutKeys = {...env};
     const keyNames = {
       openai:"OPENAI_API_KEY", xai:"XAI_API_KEY", anthropic:"ANTHROPIC_API_KEY",
       gemini:"GEMINI_API_KEY", deepseek:"DEEPSEEK_API_KEY", qwen:"DASHSCOPE_API_KEY",
-      kimi:"MOONSHOT_API_KEY", zhipu:"ZAI_API_KEY", mistral:"MISTRAL_API_KEY",cohere:"COHERE_API_KEY", modelscope:"MODELSCOPE_TOKEN"
+      kimi:"MOONSHOT_API_KEY", zhipu:"ZAI_API_KEY", mistral:"MISTRAL_API_KEY",cohere:"COHERE_API_KEY", modelscope:"MODELSCOPE_TOKEN", nvidia:"NVIDIA_API_KEY"
     };
     delete withoutKeys[keyNames[provider]];
     assert.throws(() => buildGovernedProviderRequest({provider,model,content:"help"}, withoutKeys),

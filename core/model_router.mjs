@@ -3,9 +3,9 @@ import { listGovernedProviders, ModelPolicyError } from './model_policy_gateway.
 import { evaluateHumanitarianAction } from './humanitarian_policy.mjs';
 
 const identifier = /^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$/;
-const modelscopeModelId = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}\/[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/;
-const validModelId = (provider, model) => provider === 'modelscope'
-  ? typeof model === 'string' && modelscopeModelId.test(model)
+const namespacedModelId = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}\/[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/;
+const validModelId = (provider, model) => ['modelscope', 'nvidia'].includes(provider)
+  ? typeof model === 'string' && namespacedModelId.test(model)
   : typeof model === 'string' && identifier.test(model);
 const finiteNonnegative = value => Number.isFinite(value) && value >= 0;
 
@@ -54,3 +54,4 @@ export function selectGovernedModel(trustedAction, env = process.env, now = Date
 }
 
 function compare(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
+
