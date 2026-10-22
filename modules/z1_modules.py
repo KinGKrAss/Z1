@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from core.system_z1_core import ModuleHealth
 
-MODULES = ("zoe", "gaia", "fortuna", "electra", "diplomatie", "ppt")
+MODULES = ("zoe", "gaia", "fortuna", "electra", "diplomatie", "ppt", "charity")
 
 
 class Z1DomainModule:
@@ -51,5 +51,20 @@ class PptModule(Z1DomainModule):
         super().__init__("ppt")
 
 
+class CharityModule(Z1DomainModule):
+    """Quarterly 25% charitable-reserve control plane adapter."""
+
+    def __init__(self) -> None:
+        super().__init__("charity", version="1.0.0")
+
+
 def default_modules() -> list[Z1DomainModule]:
-    return [ZoeModule(), GaiaModule(), FortunaModule(), ElectraModule(), DiplomatieModule(), PptModule()]
+    return [
+        ZoeModule(),
+        GaiaModule(),
+        FortunaModule(),
+        ElectraModule(),
+        DiplomatieModule(),
+        PptModule(),
+        CharityModule(),
+    ]
