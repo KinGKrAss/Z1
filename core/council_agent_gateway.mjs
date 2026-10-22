@@ -46,7 +46,7 @@ function extractText(provider, value) {
     return (value?.output || []).flatMap(message => message.content || [])
       .filter(part => part.type === "output_text").map(part => part.text || "").join("\n");
   }
-  if (["xai","deepseek","qwen","kimi","zhipu","mistral"].includes(provider)) {
+  if (["xai","deepseek","qwen","kimi","zhipu","mistral","nvidia"].includes(provider)) {
     const text = value?.choices?.[0]?.message?.content;
     return typeof text === "string" ? text : "";
   }
