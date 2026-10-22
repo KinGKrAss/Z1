@@ -3,9 +3,9 @@ import { listGovernedProviders, ModelPolicyError } from './model_policy_gateway.
 import { evaluateHumanitarianAction } from './humanitarian_policy.mjs';
 
 const identifier = /^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$/;
-const modelscopeModelId = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}\/[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/;
-const validModelId = (provider, model) => provider === 'modelscope'
-  ? typeof model === 'string' && modelscopeModelId.test(model)
+const namespacedModelId = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}\/[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/;
+const validModelId = (provider, model) => ['modelscope', 'nvidia'].includes(provider)
+  ? typeof model === 'string' && namespacedModelId.test(model)
   : typeof model === 'string' && identifier.test(model);
 const finiteNonnegative = value => Number.isFinite(value) && value >= 0;
 
@@ -54,3 +54,16 @@ export function selectGovernedModel(trustedAction, env = process.env, now = Date
 }
 
 function compare(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
+
+
+test('routes explicitly allowlisted NVIDIA NIM models', () => {
+  const model = 'nvidia/nemotron-3-nano-30b-a3b';
+  const configuration = {
+    ...env([]), NVIDIA_API_KEY: 'test-only', Z1_NVIDIA_MODELS: model,
+    Z1_MODEL_ROUTING_PROFILES: JSON.stringify([profile(model, {provider: 'nvidia'})])
+  };
+  const selected = selectGovernedModel('disaster_response', configuration, now);
+  assert.deepEqual({provider: selected.provider, model: selected.model}, {provider: 'nvidia', model});
+  const bad = {...configuration, Z1_MODEL_ROUTING_PROFILES: JSON.stringify([profile('nvidia/../escape', {provider: 'nvidia'})])};
+  assert.throws(() => selectGovernedModel('disaster_response', bad, now), {code: 'invalid_routing_configuration'});
+});
