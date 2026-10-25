@@ -11,3 +11,4 @@ coverage/
 .env*
 !.env.example
 z1_import_ready.json
+data/windpark-accounting.json
