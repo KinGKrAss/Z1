@@ -187,6 +187,10 @@ export async function handleWindparkAccountingApi(req, res, url, { json, readJso
   if (!tokenMatches(req.headers.authorization, token)) { json(res, 401, { error: "unauthorized" }); return true; }
 
   try {
+    if (req.method === "GET" && url.pathname === "/api/z1/windparks/audit") {
+      const store = await readStore();
+      return json(res, 200, { events: store.auditEvents }), true;
+    }
     if (req.method === "GET" && url.pathname === "/api/z1/windparks") {
       const month = url.searchParams.get("month");
       if (!validMonth(month)) return json(res, 400, { error: "month_must_be_yyyy_mm" }), true;
