@@ -6,10 +6,9 @@ const storePath = path.resolve(process.env.Z1_WINDPARK_DATA_FILE || path.join(pr
 const entryKinds = new Set(["income", "expense", "production"]);
 const evidenceStatuses = new Set(["documented", "reported"]);
 const costClasses = new Set(["operating", "interest", "principal", "tax", "investment", "reserve", "other"]);
-const idPattern = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$/;
 let writes = Promise.resolve();
 
-function emptyStore() { return { schemaVersion: 1, parks: [], entries: [] }; }
+function emptyStore() { return { schemaVersion: 1, parks: [], entries: [], auditEvents: [] }; }
 
 async function readStore() {
   try {
@@ -17,6 +16,8 @@ async function readStore() {
     if (parsed?.schemaVersion !== 1 || !Array.isArray(parsed.parks) || !Array.isArray(parsed.entries)) {
       throw new Error("invalid_store_shape");
     }
+    parsed.auditEvents ??= [];
+    if (!Array.isArray(parsed.auditEvents)) throw new Error("invalid_store_shape");
     return parsed;
   } catch (error) {
     if (error?.code === "ENOENT") return emptyStore();
@@ -120,11 +121,26 @@ function summarize(store, month) {
     const actualExpensesMinor = sum("expense", "documented", "amountMinor");
     const reportedIncomeMinor = sum("income", "reported", "amountMinor");
     const reportedExpensesMinor = sum("expense", "reported", "amountMinor");
+    const hasDocumentedProduction = rows.some(row => row.kind === "production" && row.evidenceStatus === "documented");
+    const hasDocumentedIncome = rows.some(row => row.kind === "income" && row.evidenceStatus === "documented");
+    const hasDocumentedExpense = rows.some(row => row.kind === "expense" && row.evidenceStatus === "documented");
+    const hasReportedProduction = rows.some(row => row.kind === "production" && row.evidenceStatus === "reported");
+    const hasReportedIncome = rows.some(row => row.kind === "income" && row.evidenceStatus === "reported");
+    const hasReportedExpense = rows.some(row => row.kind === "expense" && row.evidenceStatus === "reported");
     const documentedOperatingExpensesMinor = rows.filter(row => row.kind === "expense" && row.costClass === "operating" && row.evidenceStatus === "documented").reduce((total, row) => total + row.amountMinor, 0);
     const reportedOperatingExpensesMinor = rows.filter(row => row.kind === "expense" && row.costClass === "operating" && row.evidenceStatus === "reported").reduce((total, row) => total + row.amountMinor, 0);
     return {
       park,
       recorded: rows.length > 0,
+      hasDocumentedProduction,
+      hasDocumentedIncome,
+      hasDocumentedExpense,
+      hasDocumentedFinancialEntries: hasDocumentedIncome || hasDocumentedExpense,
+      hasReportedProduction,
+      hasReportedIncome,
+      hasReportedExpense,
+      hasReportedFinancialEntries: hasReportedIncome || hasReportedExpense,
+      missingMetricCount: Number(!hasDocumentedProduction) + Number(!hasDocumentedIncome) + Number(!hasDocumentedExpense),
       documentedProductionKwh: sum("production", "documented", "energyKwh"),
       reportedProductionKwh: sum("production", "reported", "energyKwh"),
       documentedIncomeMinor: actualIncomeMinor,
@@ -137,7 +153,6 @@ function summarize(store, month) {
       reportedOperatingExpensesMinor,
       reportedOperatingResultMinor: reportedIncomeMinor - reportedOperatingExpensesMinor,
       reportedNetCashflowMinor: reportedIncomeMinor - reportedExpensesMinor,
-      missingEntryCount: rows.length
     };
   });
   const total = field => parkSummaries.reduce((sum, item) => sum + item[field], 0);
@@ -180,12 +195,20 @@ export async function handleWindparkAccountingApi(req, res, url, { json, readJso
     }
     if (req.method === "POST" && url.pathname === "/api/z1/windparks/parks") {
       const body = await readJson(req);
-      const park = await changeStore(store => addPark(store, body));
+      const park = await changeStore(store => {
+        const created = addPark(store, body);
+        store.auditEvents.push({ id: randomUUID(), action: "park.created", targetType: "park", targetId: created.id, actor: "shared_api_token", createdAt: new Date().toISOString() });
+        return created;
+      });
       return json(res, 201, { park }), true;
     }
     if (req.method === "POST" && url.pathname === "/api/z1/windparks/entries") {
       const body = await readJson(req);
-      const entry = await changeStore(store => addEntry(store, body));
+      const entry = await changeStore(store => {
+        const created = addEntry(store, body);
+        store.auditEvents.push({ id: randomUUID(), action: "entry.created", targetType: "entry", targetId: created.id, actor: "shared_api_token", createdAt: new Date().toISOString() });
+        return created;
+      });
       return json(res, 201, { entry }), true;
     }
     return json(res, 404, { error: "not_found" }), true;
