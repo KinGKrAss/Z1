@@ -1,6 +1,6 @@
 # Windpark-Buchhaltung
 
-The Z1 windpark ledger stores park records, monthly production, income and expenses in an append-only-at-entry-level JSON file. Entries are not overwritten through the API. The application shows documented entries separately from user-reported entries and never fills missing values with estimates.
+The Z1 windpark ledger stores park records, monthly production, income and expenses in an append-only-at-entry-level JSON file. Entries are not overwritten through the API. The application shows entries with a user-entered source reference separately from user-reported entries and never fills missing values with estimates.
 
 ## Start locally
 
@@ -22,4 +22,4 @@ Open `/windparks.html`, enter the configured Z1 API token in the access field, a
 
 ## Current integration boundary
 
-The ledger does not connect to banks, meters, market settlement systems or permit registries. Import and automated reconciliation require a data source and credentials to be configured. No source files or credentials were available when this feature was added, so the ledger starts empty and contains no claimed windpark cashflows.\n\nEach park or entry creation appends an audit event with action, target ID, timestamp and actor label `shared_api_token`. This labels the credential class; it does not identify a person. The JSON audit list is not tamper-proof and does not replace Z1 role-based permission checks or the central audit service. Entry and park records have no edit or delete endpoint; corrections should be recorded as new, clearly described entries until a reversal workflow exists.
+The ledger does not connect to banks, meters, market settlement systems or permit registries. Import and automated reconciliation require a data source and credentials to be configured. No source files or credentials were available when this feature was added, so the ledger starts empty and contains no claimed windpark cashflows.\n\nEach park or entry creation appends an audit event with action, target ID, timestamp and actor label `shared_api_token`. Read the current events through the authenticated `GET /api/z1/windparks/audit` endpoint. This labels the credential class; it does not identify a person. The JSON audit list is not tamper-proof and does not replace Z1 role-based permission checks or the central audit service. Entry and park records have no edit or delete endpoint; corrections should be recorded as new, clearly described entries until a reversal workflow exists.
