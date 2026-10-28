@@ -11,6 +11,30 @@ app.use(cors());
 app.use(express.json());
 
 const z1ApiBaseUrl = (process.env.Z1_API_BASE_URL || "http://127.0.0.1:3001").replace(/\/+$/, "");
+
+async function proxyWindparkRequest(req: express.Request, res: express.Response) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const headers: Record<string, string> = { accept: "application/json" };
+    if (req.headers.authorization) headers.authorization = req.headers.authorization;
+    if (req.method !== "GET" && req.method !== "HEAD") headers["content-type"] = "application/json";
+    const response = await fetch(`${z1ApiBaseUrl}${req.originalUrl}`, {
+      method: req.method,
+      headers,
+      ...(req.method !== "GET" && req.method !== "HEAD" ? { body: JSON.stringify(req.body ?? {}) } : {}),
+      signal: controller.signal,
+    });
+    res.status(response.status).type(response.headers.get("content-type") || "application/json").send(await response.text());
+  } catch {
+    res.status(502).json({ error: "windpark_api_unavailable", message: "The Z1 accounting API could not be reached." });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+app.all("/api/z1/windparks", proxyWindparkRequest);
+app.all("/api/z1/windparks/*", proxyWindparkRequest);
 app.get("/api/z1/dashboard-health", async (_req, res) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 3000);
