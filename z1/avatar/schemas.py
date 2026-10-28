@@ -22,11 +22,13 @@ class TransformState(SchemaModel):
     breath_chest: float
     eye_blink_left: float
     eye_blink_right: float
+    staff_tip_glow: float = 0.0
 
     def __post_init__(self) -> None:
         _validate_range("breath_chest", self.breath_chest, minimum=0.0, maximum=1.0)
         _validate_range("eye_blink_left", self.eye_blink_left, minimum=0.0, maximum=1.0)
         _validate_range("eye_blink_right", self.eye_blink_right, minimum=0.0, maximum=1.0)
+        _validate_range("staff_tip_glow", self.staff_tip_glow, minimum=0.0, maximum=1.0)
 
 
 @dataclass
