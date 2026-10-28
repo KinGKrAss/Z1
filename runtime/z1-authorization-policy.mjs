@@ -40,6 +40,14 @@ const DEFAULT_POLICIES = [
   },
 ];
 
+for (const policy of DEFAULT_POLICIES) {
+  Object.freeze(policy.roles);
+  Object.freeze(policy.actions);
+  Object.freeze(policy.resources);
+  Object.freeze(policy);
+}
+Object.freeze(DEFAULT_POLICIES);
+
 function matches(patterns, value) {
   return patterns.some((pattern) => pattern === '*' || pattern === value || (pattern.endsWith('*') && value.startsWith(pattern.slice(0, -1))));
 }
@@ -62,7 +70,10 @@ export class Z1AuthorizationPolicy {
     let decision = 'DENY';
     let policyId = null;
 
-    if (matching.some((policy) => policy.effect === 'ALLOW')) {
+    const denyPolicy = matching.find((policy) => policy.effect === 'DENY');
+    if (denyPolicy) {
+      policyId = denyPolicy.id;
+    } else if (matching.some((policy) => policy.effect === 'ALLOW')) {
       decision = 'ALLOW';
       policyId = matching.find((policy) => policy.effect === 'ALLOW').id;
     } else if (matching.some((policy) => policy.effect === 'REQUIRE_APPROVAL')) {
@@ -82,7 +93,7 @@ export class Z1AuthorizationPolicy {
       evaluatedAt: now(),
     };
 
-    this.audit.push(result);
+    this.audit.push(structuredClone(result));
     return result;
   }
 

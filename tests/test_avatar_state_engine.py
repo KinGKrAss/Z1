@@ -1,7 +1,7 @@
 import unittest
 
 from z1.avatar.avatar_state_engine import AvatarStateEngine
-from z1.avatar.schemas import AvatarFrame
+from z1.avatar.schemas import AudioMessage, AvatarFrame
 
 
 class AvatarStateEngineTests(unittest.TestCase):
@@ -25,6 +25,14 @@ class AvatarStateEngineTests(unittest.TestCase):
         engine.set_audio_chunk((b"\xff\x7f" * 256))
         engine.set_audio_chunk(None)
         self.assertEqual(engine.frame().visemes.AA, 0.0)
+
+    def test_audio_metadata_must_be_integers(self):
+        for metadata in (
+            {"channels": 1.5},
+            {"sample_rate": 24000.5},
+        ):
+            with self.subTest(metadata=metadata), self.assertRaises(ValueError):
+                AudioMessage(pcm_s16le_base64="", **metadata)
 
 
 if __name__ == "__main__":

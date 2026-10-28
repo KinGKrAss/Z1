@@ -57,6 +57,10 @@ class AudioMessage(_Model):
     channels: int = 1
 
     def __post_init__(self) -> None:
+        if not isinstance(self.sample_rate, int):
+            raise ValueError("sample_rate must be an integer")
+        if not isinstance(self.channels, int):
+            raise ValueError("channels must be an integer")
         _check("sample_rate", self.sample_rate, 8000, 96000)
         _check("channels", self.channels, 1, 2)
 
