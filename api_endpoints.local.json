@@ -161,7 +161,7 @@
     ],
     "escalation": true,
     "url": "https://api.pantheon.local/v1/sophia",
-    "status": "offline",
+    "status": "online",
     "type": "live"
   },
   {
