@@ -18,3 +18,7 @@ View your app in AI Studio: https://ai.studio/apps/3c2987e2-c423-4fb0-8850-7fc54
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Local Gemini MCP connector
+
+The local Z1 runtime can use the `gemini_ask` MCP tool to send one-turn prompts to Gemini. See [the connector setup guide](integrations/gemini-mcp/README.md).
