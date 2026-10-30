@@ -51,13 +51,19 @@ export async function handleZ1AgentApi(req, res, url, { readJson, json }) {
   const pathname = url.pathname;
   const isAgentRoute = pathname.startsWith("/api/z1/agents");
   const isMemoryRoute = pathname.startsWith("/api/z1/memory");
+  const isSelfRoute = pathname === "/api/z1/self/state";
   const isGoddessRoute = pathname === "/api/goddesses" || pathname === "/api/goddesses/execute";
-  if (!isAgentRoute && !isMemoryRoute && !isGoddessRoute) return false;
+  if (!isAgentRoute && !isMemoryRoute && !isSelfRoute && !isGoddessRoute) return false;
   if (!process.env.Z1_MODEL_GATEWAY_TOKEN) return fail(res,json,503,"gateway_not_configured");
   if (!tokenAccepted(req)) return fail(res,json,401,"unauthorized");
   const configuredOwner = ownerId();
   if (!configuredOwner) return fail(res,json,503,"owner_not_configured");
   const instance = await getRuntime();
+
+  if (pathname === "/api/z1/self/state") {
+    if (req.method !== "GET") return fail(res,json,405,"method_not_allowed");
+    return respond(res,json,200,instance.selfReport(configuredOwner));
+  }
 
   if (pathname === "/api/goddesses") {
     if (req.method !== "GET") return fail(res,json,405,"method_not_allowed");
