@@ -30,7 +30,7 @@ import java.time.YearMonth
 import java.util.Locale
 
 @Composable
-fun WindparkDashboard() {
+fun WindparkDashboard(modifier: Modifier = Modifier) {
     var baseUrl by remember { mutableStateOf("http://10.0.2.2:3001") }
     var token by remember { mutableStateOf("") }
     var month by remember { mutableStateOf(YearMonth.now().toString()) }
@@ -40,7 +40,7 @@ fun WindparkDashboard() {
     val scope = rememberCoroutineScope()
 
     Column(
-        modifier = Modifier.verticalScroll(rememberScrollState()).padding(20.dp),
+        modifier = modifier.verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text("Z1 Windpark-Dashboard", style = MaterialTheme.typography.headlineSmall)
