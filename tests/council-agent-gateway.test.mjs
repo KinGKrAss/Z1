@@ -2,7 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { invokeCouncilModel, COUNCIL_SYSTEM_INSTRUCTION } from "../core/council_agent_gateway.mjs";
 
-const env = { OPENAI_API_KEY:"test-secret", Z1_OPENAI_MODELS:"test-model" };
+const env = {
+  OPENAI_API_KEY:"test-secret", Z1_OPENAI_MODELS:"test-model",
+  NVIDIA_API_KEY:"test-nvidia-secret", Z1_NVIDIA_MODELS:"nvidia/nemotron-3-nano-30b-a3b"
+};
 
 test("Council model call is allowlisted, audited before dispatch, and has no tools", async () => {
   const events = [];
@@ -23,6 +26,27 @@ test("Council model call is allowlisted, audited before dispatch, and has no too
   assert.equal(requestBody.store, false);
   assert.equal("tools" in requestBody, false);
   assert.equal(result.text, "A concise summary.");
+});
+
+test("NVIDIA NIM can run an allowlisted Council role", async () => {
+  const events = [];
+  const result = await invokeCouncilModel({
+    provider:"nvidia", model:"nvidia/nemotron-3-nano-30b-a3b", roleId:"zoe", taskType:"summary",
+    content:"Summarize this supplied note."
+  }, {
+    env, audit:async event => events.push(event.outcome),
+    fetchImpl:async (url, init) => {
+      assert.equal(url,"https://integrate.api.nvidia.com/v1/chat/completions");
+      assert.equal(init.headers.Authorization,"Bearer test-nvidia-secret");
+      const body=JSON.parse(init.body);
+      assert.equal(body.model,"nvidia/nemotron-3-nano-30b-a3b");
+      assert.equal(body.messages[0].role,"system");
+      assert.equal(body.messages[0].content,COUNCIL_SYSTEM_INSTRUCTION);
+      return {ok:true,json:async()=>({choices:[{message:{content:"NVIDIA Council result."}}]})};
+    }
+  });
+  assert.equal(result.text,"NVIDIA Council result.");
+  assert.deepEqual(events,["approved","completed"]);
 });
 
 test("invalid roles are rejected before provider dispatch", async () => {

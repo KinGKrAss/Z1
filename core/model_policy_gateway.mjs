@@ -18,13 +18,17 @@ const PROVIDERS = Object.freeze({
   zhipu: { key: "ZAI_API_KEY", models: "Z1_ZHIPU_MODELS" },
   mistral: { key: "MISTRAL_API_KEY", models: "Z1_MISTRAL_MODELS" },
   cohere: { key: "COHERE_API_KEY", models: "Z1_COHERE_MODELS" },
-  modelscope: { key: "MODELSCOPE_TOKEN", models: "Z1_MODELSCOPE_MODELS" }
+  modelscope: { key: "MODELSCOPE_TOKEN", models: "Z1_MODELSCOPE_MODELS" },
+  nvidia: { key: "NVIDIA_API_KEY", models: "Z1_NVIDIA_MODELS" }
 });
 const MODEL_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$/;
 const MODELSCOPE_MODEL_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}\/[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/;
+const NVIDIA_MODEL_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}\/[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/;
 function validModelId(provider, model) {
-  return typeof model === "string" && (provider === "modelscope"
-    ? MODELSCOPE_MODEL_PATTERN.test(model) : MODEL_PATTERN.test(model));
+  if (typeof model !== "string") return false;
+  if (provider === "modelscope") return MODELSCOPE_MODEL_PATTERN.test(model);
+  if (provider === "nvidia") return NVIDIA_MODEL_PATTERN.test(model);
+  return MODEL_PATTERN.test(model);
 }
 
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
@@ -134,7 +138,8 @@ export function buildGovernedProviderRequest({ provider, model, content }, env =
     kimi: "https://api.moonshot.ai/v1/chat/completions",
     zhipu: "https://api.z.ai/api/paas/v4/chat/completions",
     mistral: "https://api.mistral.ai/v1/chat/completions",
-    modelscope: "https://api-inference.modelscope.cn/v1/chat/completions"
+    modelscope: "https://api-inference.modelscope.cn/v1/chat/completions",
+    nvidia: "https://integrate.api.nvidia.com/v1/chat/completions"
   });
   if (provider === "xai" || Object.hasOwn(CHAT_ENDPOINTS, provider)) {
     return {
@@ -180,7 +185,7 @@ function extractModelText(provider, value) {
     return (value?.output || []).flatMap((m) => m.content || [])
       .filter((part) => part.type === "output_text").map((part) => part.text || "").join("\n");
   }
-  if (provider === "xai" || ["deepseek","qwen","kimi","zhipu","mistral","modelscope"].includes(provider)) {
+  if (provider === "xai" || ["deepseek","qwen","kimi","zhipu","mistral","modelscope","nvidia"].includes(provider)) {
     const content = value?.choices?.[0]?.message?.content;
     return typeof content === "string" ? content : "";
   }
