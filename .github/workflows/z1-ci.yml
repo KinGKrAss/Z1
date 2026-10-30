@@ -38,6 +38,8 @@ jobs:
         run: node --check runtime/z1-api.mjs
       - name: Type-check
         run: npm run lint
+      - name: Test operational self-model API
+        run: npm run test:self-model
       - name: Build
         run: npm run build
       - name: Test Z1 humanitarian multi-model gateway
