@@ -41,6 +41,26 @@ test("authenticated goddess compatibility API reports registry and queues bounde
   assert.equal(queued.payload.task.roleId,"cryptessa");
   assert.equal(queued.payload.task.status,"queued");
 
+  const savedMemory = await call("POST","/api/z1/memory/items",{
+    title:"Z1 Kontinuität",
+    content:"Rene möchte, dass Z1 Quellen und Korrekturen erinnert.",
+    sourceReference:"chat:continuity-test"
+  });
+  assert.equal(savedMemory.status,201);
+
+  const selfState = await call("GET","/api/z1/self/state");
+  assert.equal(selfState.status,200);
+  assert.equal(selfState.payload.reportKind,"operational_self_report");
+  assert.equal(selfState.payload.identity.systemId,"z1");
+  assert.equal(selfState.payload.memory.sharedEntryCount,1);
+  assert.equal(selfState.payload.memory.retrievalTrackedForTasks,true);
+  assert.equal(selfState.payload.ambientPerceptionAvailable,false);
+  assert.ok(selfState.payload.recentTasks.some(task=>task.id===queued.payload.task.id && task.status==="queued"));
+  assert.match(selfState.payload.interpretation,/does not establish subjective experience/);
+
+  const wrongMethod = await call("POST","/api/z1/self/state");
+  assert.equal(wrongMethod.status,405);
+
   const unauthorized = await handleZ1AgentApi(
     {method:"GET",headers:{}},{},new URL("/api/goddesses","http://localhost"),
     {readJson:async()=>({}),json:(_res,status,payload)=>{assert.equal(status,401);assert.equal(payload.error,"unauthorized");}}
