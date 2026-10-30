@@ -92,7 +92,7 @@ export class AutonomousCouncilRuntime {
       instructions:instructions.trim(), context:context.trim(),
       createdAt:new Date(this.clock()).toISOString(), nextRunAt:new Date(start).toISOString(),
       repeatEveryMinutes, status:"queued", attempts:0, runCount:0,
-      lastRunAt:null, lastError:null, result:null, memoryId:null
+      lastRunAt:null, lastError:null, result:null, memoryId:null, usedMemoryRefs:[], contextLoadedAt:null
     };
     await this.audit({ event:"z1_agent_task_created", task_id:task.id, owner_id:ownerId, role_id:role.id, task_type:taskType });
     this.state.tasks.push(task);
@@ -112,6 +112,42 @@ export class AutonomousCouncilRuntime {
   listMemories(ownerId, roleId = undefined) {
     return this.state.memories.filter(memory => memory.ownerId === ownerId && memory.review !== "rejected" &&
       (!roleId || memory.roleId === roleId)).map(({ownerId: _ownerId, ...memory}) => memory);
+  }
+
+  selfReport(ownerId) {
+    if (typeof ownerId !== "string" || !ownerId.trim()) throw new Error("owner_required");
+    const tasks = this.listTasks(ownerId);
+    const activeTasks = tasks.filter(task => task.status === "running");
+    const recentTasks = [...tasks]
+      .sort((a,b) => (b.lastRunAt || b.createdAt).localeCompare(a.lastRunAt || a.createdAt))
+      .slice(0,5)
+      .map(task => ({
+        id:task.id, roleId:task.roleId, taskType:task.taskType, status:task.status,
+        createdAt:task.createdAt, lastRunAt:task.lastRunAt, lastError:task.lastError,
+        usedMemoryRefs:task.usedMemoryRefs || [], contextLoadedAt:task.contextLoadedAt || null
+      }));
+    const sharedMemories = this.memoryStore?.list(ownerId) || [];
+    const roleMemories = this.listMemories(ownerId);
+    return {
+      schemaVersion:"1.0",
+      reportKind:"operational_self_report",
+      identity:{ systemId:"z1", component:"autonomous-council-runtime", identityVersion:"1.0" },
+      runtime:this.status(),
+      currentTasks:activeTasks.map(task => ({
+        id:task.id, roleId:task.roleId, taskType:task.taskType, status:task.status,
+        lastRunAt:task.lastRunAt, usedMemoryRefs:task.usedMemoryRefs || [],
+        contextLoadedAt:task.contextLoadedAt || null
+      })),
+      recentTasks,
+      memory:{
+        sharedEntryCount:sharedMemories.length,
+        roleEntryCount:roleMemories.length,
+        retrievalTrackedForTasks:true
+      },
+      inputChannels:["authenticated Z1 API request","owner-scoped Z1 memory store"],
+      ambientPerceptionAvailable:false,
+      interpretation:"This reports software identity, stored records, and runtime activity. It does not establish subjective experience."
+    };
   }
 
   async giveFeedback({ ownerId, memoryId, helpful }) {
@@ -202,6 +238,19 @@ export class AutonomousCouncilRuntime {
       const sharedMemoryText = sharedMemories.map(item =>
         `User-provided shared memory (${item.sourceReference}; verify the source): ${item.title} — ${item.content}`
       ).join("\n").slice(0,2500);
+      const currentTask = this.state.tasks.find(item => item.id === task.id);
+      if (currentTask) {
+        currentTask.usedMemoryRefs = [
+          ...memories.map(item => ({ id:item.id, kind:"role_memory", review:item.review || "unreviewed" })),
+          ...sharedMemories.map(item => ({ id:item.id, kind:"shared_memory", sourceReference:item.sourceReference }))
+        ];
+        currentTask.contextLoadedAt = new Date(this.clock()).toISOString();
+        await this.persist();
+      }
+      await this.audit({
+        event:"z1_self_context_loaded", task_id:task.id, owner_id:task.ownerId,
+        role_id:task.roleId, memory_ids:[...memories.map(item => item.id), ...sharedMemories.map(item => item.id)]
+      });
       const content = [
         `Role: ${role.name} — ${role.title}. Domain: ${role.domain}. Mission: ${role.mission}. Tone: ${role.tone}.`,
         `Task type: ${task.taskType}.`,
