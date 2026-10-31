@@ -60,6 +60,13 @@ until the task status is SUCCEED. The returned image URL comes from ModelScope.
 
 We invite technical feedback through GitHub Issues.
 
+## Autonomous Council worker
+
+The opt-in server worker, its environment settings, persistent storage requirements,
+and authenticated task API are documented in [Autonomous Council Worker](docs/AUTONOMOUS_COUNCIL_WORKER.md).
+It is disabled by default and needs a configured owner, provider, model routing,
+and private persistent storage before activation.
+
 ## Governed automatic model selection
 
 The authenticated humanitarian workflows support opt-in, server-configured
