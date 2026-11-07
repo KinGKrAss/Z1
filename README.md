@@ -75,6 +75,10 @@ quality/cost/latency algorithm, confidentiality approvals and validation.
 No profiles or live model calls are enabled by this code change.
 
 
+## Optional Arztbrief document integration
+
+The Gemini MCP connector can expose an optional read-only Arztbrief document bridge. It is disabled until the upstream bearer token is configured in the trusted backend. It can list and read documents; it cannot issue or change prescriptions. See [the setup and privacy limits](integrations/gemini-mcp/README.md#optional-arztbrief-document-access).
+
 ## Windpark accounting
 
 Z1 includes a source-referenced monthly ledger for windpark production, income, operating costs and cash flow. See [the setup and data rules](docs/WINDPARK_ACCOUNTING.md) and open `/windparks.html` in the app. It starts empty and does not connect to banks, meters or settlement providers.
