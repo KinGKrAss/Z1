@@ -61,3 +61,13 @@ Add this to Gemini CLI's `settings.json`. Use the hyphenated alias shown here. K
 ## Limits
 
 This connector can be used by a Gemini API backend or Gemini CLI configured for remote MCP. It does not install a connector into the consumer Gemini Android app. The ChatGPT System Z1 plugin's private persistent store is a separate service. This connector reads the Z1 runtime endpoints in `runtime/z1-api.mjs`; it cannot access that plugin store unless Z1 adds a separately authenticated API for it. A code package alone does not create a public endpoint. Hosting, TLS, runtime URL, and a private access token must be configured before Gemini can connect live.
+
+If you explicitly enable this data flow for the Gemini API, add `arztbrief_list_documents` and `arztbrief_get_document` to that request's `allowed_tools` list. They are not included in the default list above. This keeps medical document access opt-in.
+
+## Optional Arztbrief document access
+
+Z1 can optionally expose two additional, **read-only** tools through this connector: `arztbrief_list_documents` and `arztbrief_get_document`. They call the configured Arztbrief MCP server using its bearer token. The default endpoint is the fixed Arztbrief MCP URL shown in `.env.example`; the connector rejects any other host or path.
+
+Set `ARZTBRIEF_MCP_TOKEN` only in the trusted Z1 backend's secret manager. Do not put the token in Git, Android, a browser bundle, or an AI prompt. This integration uses the existing shared Z1 MCP bearer authentication and is not user-isolated. Run it only in a private, single-user Z1 deployment; do not enable it on a shared MCP endpoint. The connector does not save Arztbrief content to Z1. When a model invokes either tool, the returned document content is provided to that model, so enable this only for an account and workflow authorized to process those medical records.
+
+This upstream server is explicitly read-only. Z1 can list and read documents, but it cannot create, edit, sign, or transmit medication orders. Medication decisions and any prescription workflow remain with an authorized healthcare professional. A separate write-capable, verified API would be required for prescription management.

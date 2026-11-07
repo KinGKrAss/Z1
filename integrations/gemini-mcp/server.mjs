@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { McpServer } from "@modelcontextprotocol/server";
 import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
 import { z } from "zod";
+import { createArztbriefClient } from "./arztbrief-client.mjs";
 
 const NAME = "z1_readonly";
 const VERSION = "0.1.0";
@@ -64,6 +65,49 @@ function createMcpServer() {
       }
     });
   }
+  if (process.env.ARZTBRIEF_MCP_TOKEN) {
+    const arztbrief = createArztbriefClient();
+    server.registerTool(
+      "arztbrief_list_documents",
+      {
+        description: "Read a paginated list of the authenticated user's Arztbrief documents. Read-only; does not create or change prescriptions.",
+        inputSchema: z.object({
+          limit: z.number().int().min(1).max(100).optional(),
+          offset: z.number().int().min(0).optional()
+        }),
+        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+      },
+      async ({ limit, offset }) => {
+        try {
+          return await arztbrief.listDocuments({ limit, offset });
+        } catch {
+          return {
+            isError: true,
+            content: [{ type: "text", text: "Arztbrief read failed. Check the private server logs." }]
+          };
+        }
+      }
+    );
+    server.registerTool(
+      "arztbrief_get_document",
+      {
+        description: "Read one Arztbrief document by its document ID. Read-only; does not create or change prescriptions.",
+        inputSchema: z.object({ document_id: z.string().trim().min(1).max(200) }),
+        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+      },
+      async ({ document_id }) => {
+        try {
+          return await arztbrief.getDocument(document_id);
+        } catch {
+          return {
+            isError: true,
+            content: [{ type: "text", text: "Arztbrief read failed. Check the private server logs." }]
+          };
+        }
+      }
+    );
+  }
+
   return server;
 }
 
