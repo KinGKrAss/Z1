@@ -62,6 +62,8 @@ Add this to Gemini CLI's `settings.json`. Use the hyphenated alias shown here. K
 
 This connector can be used by a Gemini API backend or Gemini CLI configured for remote MCP. It does not install a connector into the consumer Gemini Android app. The ChatGPT System Z1 plugin's private persistent store is a separate service. This connector reads the Z1 runtime endpoints in `runtime/z1-api.mjs`; it cannot access that plugin store unless Z1 adds a separately authenticated API for it. A code package alone does not create a public endpoint. Hosting, TLS, runtime URL, and a private access token must be configured before Gemini can connect live.
 
+If you explicitly enable this data flow for the Gemini API, add `arztbrief_list_documents` and `arztbrief_get_document` to that request's `allowed_tools` list. They are not included in the default list above. This keeps medical document access opt-in.
+
 ## Optional Arztbrief document access
 
 Z1 can optionally expose two additional, **read-only** tools through this connector: `arztbrief_list_documents` and `arztbrief_get_document`. They call the configured Arztbrief MCP server using its bearer token. The default endpoint is the fixed Arztbrief MCP URL shown in `.env.example`; the connector rejects any other host or path.
