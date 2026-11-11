@@ -13,11 +13,11 @@ class Z1DomainModulesTests(unittest.IsolatedAsyncioTestCase):
             try:
                 self.assertEqual(
                     core.registry.names(),
-                    ("diplomatie", "electra", "fortuna", "gaia", "ppt", "zoe"),
+                    ("charity", "diplomatie", "electra", "fortuna", "gaia", "ppt", "zoe"),
                 )
                 health = await core.health()
                 self.assertEqual(health["status"], "online")
-                self.assertEqual(health["module_count"], 6)
+                self.assertEqual(health["module_count"], 7)
                 self.assertTrue(all(item["status"] == "online" for item in health["modules"]))
             finally:
                 await core.stop()

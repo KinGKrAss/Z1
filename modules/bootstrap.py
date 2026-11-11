@@ -7,12 +7,14 @@ import json
 
 from core.system_z1_core import SystemZ1Core, Z1Config
 from modules.z1_modules import default_modules
+from z1.finance.quarter_close import bind_quarter_close
 
 
 def build_core(config: Z1Config | None = None) -> SystemZ1Core:
     core = SystemZ1Core(config)
     for module in default_modules():
         core.register_module(module)
+    bind_quarter_close(core)
     return core
 
 
