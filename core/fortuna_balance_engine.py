@@ -35,6 +35,7 @@ class Asset:
         self.name = self.name.strip()
         self.asset_class = self.asset_class.strip()
         self.currency = self.currency.strip().upper()
+        self.verification = VerificationStatus(self.verification)
         if not self.name:
             raise ValueError("Asset name is required")
         if not self.asset_class:
@@ -59,10 +60,16 @@ class Z1FinanceEngine:
 
     def __init__(self) -> None:
         self.assets: list[Asset] = []
+        self._approved: dict[str, tuple[Optional[Decimal], str, str, str]] = {}
 
     def add_asset(self, asset: Asset) -> None:
         if any(existing.name == asset.name for existing in self.assets):
             raise ValueError(f"Asset bereits vorhanden: {asset.name}")
+        # Callers cannot obtain balance approval by setting public fields during import.
+        if asset.verification is VerificationStatus.VERIFIED or asset.balance_eligible:
+            asset.verification = VerificationStatus.UNVERIFIED
+            asset.balance_eligible = False
+            asset.verified_by = None
         self.assets.append(asset)
 
     def verify_asset(
@@ -86,11 +93,18 @@ class Z1FinanceEngine:
         asset.verified_by = reviewer
         asset.verification = VerificationStatus.VERIFIED
         asset.balance_eligible = True
+        self._approved[asset.name] = (
+            asset.value,
+            asset.currency,
+            reference,
+            reviewer,
+        )
         return asset
 
     def exclude_asset(self, asset_name: str) -> Asset:
         asset = self._get_asset(asset_name)
         asset.balance_eligible = False
+        self._approved.pop(asset.name, None)
         return asset
 
     def verified_total(self, currency: str = "EUR") -> Decimal:
@@ -103,6 +117,7 @@ class Z1FinanceEngine:
                 and asset.verification is VerificationStatus.VERIFIED
                 and asset.currency == currency
                 and asset.value is not None
+                and self._approval_matches(asset)
             ),
             Decimal("0"),
         )
@@ -124,6 +139,15 @@ class Z1FinanceEngine:
             "raw_total_eur": str(self.raw_total("EUR")),
             "verified_total_eur": str(self.verified_total("EUR")),
         }
+
+    def _approval_matches(self, asset: Asset) -> bool:
+        approved = self._approved.get(asset.name)
+        return approved == (
+            asset.value,
+            asset.currency,
+            asset.source,
+            asset.verified_by,
+        )
 
     def _get_asset(self, asset_name: str) -> Asset:
         for asset in self.assets:
