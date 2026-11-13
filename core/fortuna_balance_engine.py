@@ -29,6 +29,7 @@ class Asset:
     verification: VerificationStatus = VerificationStatus.UNVERIFIED
     source: Optional[str] = None
     balance_eligible: bool = False
+    verified_by: Optional[str] = None
 
     def __post_init__(self) -> None:
         self.name = self.name.strip()
@@ -82,6 +83,7 @@ class Z1FinanceEngine:
             raise ValueError("Evidence reference and reviewer are required")
         asset = self._get_asset(asset_name)
         asset.source = reference
+        asset.verified_by = reviewer
         asset.verification = VerificationStatus.VERIFIED
         asset.balance_eligible = True
         return asset
