@@ -75,8 +75,8 @@ function createMcpServer() {
     inputSchema: z.object({
       roleId: z.string().trim().min(1).max(80),
       taskType: z.enum(["analysis", "summary", "planning", "quality_review", "knowledge_organization", "draft"]),
-      instructions: z.string().trim().min(1).max(8000),
-      context: z.record(z.string(), z.unknown()).optional(),
+      instructions: z.string().trim().min(1).max(4000),
+      context: z.string().max(2500).optional(),
       runAt: z.string().datetime().optional(),
       repeatEveryMinutes: z.number().int().min(60).max(525600).optional()
     }),
@@ -94,7 +94,7 @@ function createMcpServer() {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }, async ({ memory_id, feedback }) => {
     try {
-      return result(await z1Request(`/api/z1/agents/memories/${encodeURIComponent(memory_id)}/feedback`, "POST", { feedback }));
+      return result(await z1Request(`/api/z1/agents/memories/${encodeURIComponent(memory_id)}/feedback`, "POST", { helpful: feedback === "helpful" }));
     } catch { return failure(); }
   });
 
